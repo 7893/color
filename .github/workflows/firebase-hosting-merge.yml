@@ -3,38 +3,37 @@ name: Deploy to Firebase Hosting on merge
 'on':
   push:
     branches:
-      - main # 请确保这是您的主分支名称，例如 main, master 等
+      - main # 确保这是您的主分支名称
 
 jobs:
   build_and_deploy:
-    runs-on: ubuntu-latest # 使用最新的 Ubuntu 运行器
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4 # 检出您的代码
+        uses: actions/checkout@v4
 
-      # --- 新增的构建步骤 ---
+      # === 必须重新添加这些构建步骤 ===
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22' # 建议使用一个稳定的 LTS Node.js 版本，如 20.x
+          node-version: '22' # 您选择的 Node.js 版本
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10 # 您本地使用的是 v10.x.x 的 pnpm
+          version: 10 # 您本地 pnpm 的主版本
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile # 使用锁文件安装依赖，确保一致性
+        run: pnpm install --frozen-lockfile
 
       - name: Build project
-        run: pnpm build # 执行 package.json 中定义的 "build" 脚本 (即 parcel build ...)
-      # --- 构建步骤结束 ---
+        run: pnpm build # 执行 package.json 中的 "build" 脚本
+      # === 构建步骤结束 ===
 
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_E50914 }}' # 这是您之前设置的 GitHub Secret
-          channelId: live # 部署到实时频道
-          projectId: e50914 # 您的 Firebase 项目 ID
-          # entryPoint: . # (可选) 如果您的 firebase.json 不在仓库根目录，可以在此指定路径。默认为仓库根目录。
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_E50914 }}' # CLI已为此项目创建了这个Secret
+          channelId: live
+          projectId: e50914 # 您的新项目ID
