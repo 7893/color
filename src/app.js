@@ -21,12 +21,12 @@ const app = initializeApp(firebaseConfig);
 // 初始化 Firebase Performance Monitoring
 try {
   const perf = getPerformance(app);
-  console.log("Firebase Performance Monitoring initialized for e50914."); // 这个日志会在浏览器控制台显示
+  console.log("Firebase Performance Monitoring initialized for e50914.");
 } catch (e) {
   console.error("Error initializing Firebase Performance Monitoring for e50914:", e);
 }
 
-// --- 颜色块 JavaScript 逻辑 (包含响应式调整) ---
+// --- 以下 JavaScript 逻辑完全来自您提供的原始 index.html ---
 const masterColorsList = [
   // Original 20
   { hex: '#4285F4', name: 'Google Blue' }, { hex: '#DB4437', name: 'Google Red' },
@@ -72,7 +72,7 @@ const masterColorsList = [
   { hex: '#DEB887', name: 'Burly Wood', needsDarkText: true }
 ];
 
-let container;
+let container; // 将在 DOMContentLoaded 中赋值
 let currentTopZIndexOnClick;
 
 function debounce(func, wait) {
@@ -92,7 +92,7 @@ function generateRandomSwatches() {
     console.error('paletteContainer not found. Ensure DOM is ready and ID is correct.');
     return;
   }
-  container.innerHTML = '';
+  container.innerHTML = ''; // 清空容器
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
 
@@ -106,13 +106,13 @@ function generateRandomSwatches() {
   const maxHeightPercent = 0.22;
 
   const minAbsSize = 80;
-  const baseMaxAbsSize = Math.min(viewportWidth * 0.3, viewportHeight * 0.3, 250);
-  const edgePadding = 10;
+  const maxAbsSize = Math.min(viewportWidth * 0.3, viewportHeight * 0.3, 250);
 
   selectedColors.forEach((colorItem, index) => {
     const swatch = document.createElement('div');
     swatch.classList.add('color-swatch');
     swatch.style.backgroundColor = colorItem.hex;
+
     if (colorItem.needsDarkText) {
       swatch.classList.add('text-dark');
     }
@@ -122,46 +122,23 @@ function generateRandomSwatches() {
     colorInfo.innerHTML = `${colorItem.hex}<br>${colorItem.name}`;
     swatch.appendChild(colorInfo);
 
-    // --- 响应式尺寸调整 ---
-    let desiredWidth = (Math.random() * (maxWidthPercent - minWidthPercent) + minWidthPercent) * viewportWidth;
-    let swatchWidth = Math.max(minAbsSize, Math.min(desiredWidth, baseMaxAbsSize));
+    // 使用您原始 index.html 中的尺寸计算逻辑
+    let swatchWidth = Math.random() * (maxWidthPercent - minWidthPercent) + minWidthPercent;
+    swatchWidth = Math.max(minAbsSize, Math.min(viewportWidth * swatchWidth, maxAbsSize));
 
-    let desiredHeight = (Math.random() * (maxHeightPercent - minHeightPercent) + minHeightPercent) * viewportHeight;
-    let swatchHeight = Math.max(minAbsSize, Math.min(desiredHeight, baseMaxAbsSize));
-
-    const maxDrawableWidth = Math.max(20, viewportWidth - 2 * edgePadding);
-    const maxDrawableHeight = Math.max(20, viewportHeight - 2 * edgePadding);
-
-    swatchWidth = Math.min(swatchWidth, maxDrawableWidth);
-    swatchHeight = Math.min(swatchHeight, maxDrawableHeight);
-    // --- 响应式尺寸调整结束 ---
+    let swatchHeight = Math.random() * (maxHeightPercent - minHeightPercent) + minHeightPercent;
+    swatchHeight = Math.max(minAbsSize, Math.min(viewportHeight * swatchHeight, maxAbsSize));
 
     swatch.style.width = `${swatchWidth}px`;
     swatch.style.height = `${swatchHeight}px`;
 
-    // --- 更稳健的定位逻辑 ---
-    // 可供随机放置的宽度范围（扣除了色块自身宽度和两边的padding）
-    const randomPlacementWidthRange = viewportWidth - swatchWidth - (2 * edgePadding);
-    let finalLeft;
-    if (randomPlacementWidthRange >= 0) {
-      finalLeft = edgePadding + (Math.random() * randomPlacementWidthRange);
-    } else {
-      // 如果可用随机范围为负（意味着色块宽度+两边padding > 视口宽度），
-      // 这种情况理论上已被 swatchWidth 的限制所避免，但作为保险，将其放在最左边edgePadding处。
-      finalLeft = edgePadding;
-    }
-    swatch.style.left = `${finalLeft}px`;
+    // 使用您原始 index.html 中的定位逻辑
+    const edgePadding = 10;
+    const maxLeft = viewportWidth - swatchWidth - edgePadding;
+    const maxTop = viewportHeight - swatchHeight - edgePadding;
 
-    // 类似地处理 top
-    const randomPlacementHeightRange = viewportHeight - swatchHeight - (2 * edgePadding);
-    let finalTop;
-    if (randomPlacementHeightRange >= 0) {
-      finalTop = edgePadding + (Math.random() * randomPlacementHeightRange);
-    } else {
-      finalTop = edgePadding;
-    }
-    swatch.style.top = `${finalTop}px`;
-    // --- 定位逻辑结束 ---
+    swatch.style.left = `${Math.max(edgePadding, Math.random() * maxLeft)}px`;
+    swatch.style.top = `${Math.max(edgePadding, Math.random() * maxTop)}px`;
 
     swatch.style.zIndex = index;
 
@@ -171,7 +148,7 @@ function generateRandomSwatches() {
       const hexToCopy = colorItem.hex;
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(hexToCopy).then(() => {
-          console.log(`Color ${hexToCopy} copied to clipboard!`); // 这个日志会在浏览器控制台显示
+          console.log(`Color ${hexToCopy} copied to clipboard!`);
         }).catch(err => {
           console.error('Failed to copy color to clipboard: ', err);
         });
@@ -187,6 +164,7 @@ function generateRandomSwatches() {
   });
 }
 
+// 确保在 DOM 完全加载后再执行操作 DOM 的代码
 document.addEventListener('DOMContentLoaded', () => {
   container = document.getElementById('paletteContainer');
   if (container) {
