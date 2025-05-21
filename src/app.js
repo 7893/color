@@ -4,7 +4,7 @@
 import { initializeApp } from "firebase/app";
 import { getPerformance } from "firebase/performance"; // 用于性能监控
 
-// 您提供的 Firebase 项目配置 (来自官网)
+// 这是您为新项目 e50914 提供的 Firebase 配置
 const firebaseConfig = {
   apiKey: "AIzaSyAE2SzXcfhMxf-ZeDtvWo0NVnPlzUo0T5s",
   authDomain: "e50914.firebaseapp.com",
@@ -14,9 +14,6 @@ const firebaseConfig = {
   appId: "1:942223279536:web:27aa4c8a8a2b1528b68275",
   measurementId: "G-VBW6HEHRH4"
 };
-// ^^^^ 再次提醒：请务必确认以上 firebaseConfig 是您从新的 e50914 Firebase 项目获取的准确配置。^^^^
-// 特别是 authDomain, storageBucket, messagingSenderId, appId, measurementId 都应该对应 e50914 项目。
-// apiKey 通常在同一个 GCP 项目下的多个 Firebase 项目间可能一样，但其他值是项目特定的。
 
 // 初始化 Firebase
 const app = initializeApp(firebaseConfig);
@@ -24,12 +21,12 @@ const app = initializeApp(firebaseConfig);
 // 初始化 Firebase Performance Monitoring
 try {
   const perf = getPerformance(app);
-  console.log("Firebase Performance Monitoring initialized for e50914.");
+  console.log("Firebase Performance Monitoring initialized for e50914."); // 这个日志会在浏览器控制台显示
 } catch (e) {
   console.error("Error initializing Firebase Performance Monitoring for e50914:", e);
 }
 
-// --- 您原来的颜色块 JavaScript 逻辑 (包含响应式调整) ---
+// --- 颜色块 JavaScript 逻辑 (包含响应式调整) ---
 const masterColorsList = [
   // Original 20
   { hex: '#4285F4', name: 'Google Blue' }, { hex: '#DB4437', name: 'Google Red' },
@@ -75,7 +72,7 @@ const masterColorsList = [
   { hex: '#DEB887', name: 'Burly Wood', needsDarkText: true }
 ];
 
-let container; // 将在 DOMContentLoaded 中赋值
+let container;
 let currentTopZIndexOnClick;
 
 function debounce(func, wait) {
@@ -92,7 +89,7 @@ function debounce(func, wait) {
 
 function generateRandomSwatches() {
   if (!container) {
-    console.error('paletteContainer not found in generateRandomSwatches. Ensure DOM is ready and ID is correct.');
+    console.error('paletteContainer not found. Ensure DOM is ready and ID is correct.');
     return;
   }
   container.innerHTML = '';
@@ -109,7 +106,7 @@ function generateRandomSwatches() {
   const maxHeightPercent = 0.22;
 
   const minAbsSize = 80;
-  const baseMaxAbsSize = Math.min(viewportWidth * 0.3, viewportHeight * 0.3, 250); // Renamed to avoid confusion
+  const baseMaxAbsSize = Math.min(viewportWidth * 0.3, viewportHeight * 0.3, 250);
   const edgePadding = 10;
 
   selectedColors.forEach((colorItem, index) => {
@@ -125,45 +122,46 @@ function generateRandomSwatches() {
     colorInfo.innerHTML = `${colorItem.hex}<br>${colorItem.name}`;
     swatch.appendChild(colorInfo);
 
-    // --- VVVV 响应式尺寸调整 VVVV ---
+    // --- 响应式尺寸调整 ---
     let desiredWidth = (Math.random() * (maxWidthPercent - minWidthPercent) + minWidthPercent) * viewportWidth;
     let swatchWidth = Math.max(minAbsSize, Math.min(desiredWidth, baseMaxAbsSize));
 
     let desiredHeight = (Math.random() * (maxHeightPercent - minHeightPercent) + minHeightPercent) * viewportHeight;
     let swatchHeight = Math.max(minAbsSize, Math.min(desiredHeight, baseMaxAbsSize));
 
-    // 确保色块尺寸不超过减去两边padding后的可用视口空间
-    // 并且确保尺寸至少为 (比如说) 20px，避免负数或过小的值导致显示问题
     const maxDrawableWidth = Math.max(20, viewportWidth - 2 * edgePadding);
     const maxDrawableHeight = Math.max(20, viewportHeight - 2 * edgePadding);
 
     swatchWidth = Math.min(swatchWidth, maxDrawableWidth);
     swatchHeight = Math.min(swatchHeight, maxDrawableHeight);
-    // --- ^^^^ 响应式尺寸调整结束 ^^^^ ---
+    // --- 响应式尺寸调整结束 ---
 
     swatch.style.width = `${swatchWidth}px`;
     swatch.style.height = `${swatchHeight}px`;
 
-    // 定位逻辑
-    // maxLeft/maxTop 计算的是色块左上角可以放置的最大坐标
-    const maxLeft = viewportWidth - swatchWidth - edgePadding;
-    const maxTop = viewportHeight - swatchHeight - edgePadding;
+    // --- 更稳健的定位逻辑 ---
+    // 可供随机放置的宽度范围（扣除了色块自身宽度和两边的padding）
+    const randomPlacementWidthRange = viewportWidth - swatchWidth - (2 * edgePadding);
+    let finalLeft;
+    if (randomPlacementWidthRange >= 0) {
+      finalLeft = edgePadding + (Math.random() * randomPlacementWidthRange);
+    } else {
+      // 如果可用随机范围为负（意味着色块宽度+两边padding > 视口宽度），
+      // 这种情况理论上已被 swatchWidth 的限制所避免，但作为保险，将其放在最左边edgePadding处。
+      finalLeft = edgePadding;
+    }
+    swatch.style.left = `${finalLeft}px`;
 
-    // 确保随机生成的 left/top 值使得色块保持在 edgePadding 内
-    // 并且，如果 maxLeft/maxTop 由于屏幕过小和 swatch 最小尺寸限制而变为负数，则 left/top 应为 edgePadding
-    swatch.style.left = `${Math.max(edgePadding, edgePadding + (Math.random() * Math.max(0, viewportWidth - swatchWidth - 2 * edgePadding)))}px`;
-    swatch.style.top = `${Math.max(edgePadding, edgePadding + (Math.random() * Math.max(0, viewportHeight - swatchHeight - 2 * edgePadding)))}px`;
-    
-    // 修正后的定位逻辑 (更简洁且经过验证的):
-    // const effectiveMaxLeft = Math.max(0, viewportWidth - swatchWidth - edgePadding);
-    // const effectiveMaxTop = Math.max(0, viewportHeight - swatchHeight - edgePadding);
-    // swatch.style.left = `${edgePadding + (Math.random() * Math.max(0, viewportWidth - swatchWidth - 2 * edgePadding))}px`;
-    // swatch.style.top = `${edgePadding + (Math.random() * Math.max(0, viewportHeight - swatchHeight - 2 * edgePadding))}px`;
-    // ^^^ 上面的注释掉的定位逻辑在非常小的屏幕上，如果 swatchWidth 接近 viewportWidth - 2*edgePadding，随机范围会变得很小。
-    // 让我们使用您原来的定位逻辑，它在 swatchWidth/Height 被正确限制后，配合 Math.max(edgePadding, ...) 应该是有效的：
-    swatch.style.left = `${Math.max(edgePadding, (Math.random() * Math.max(0, maxLeft)))}px`;
-    swatch.style.top = `${Math.max(edgePadding, (Math.random() * Math.max(0, maxTop)))}px`;
-
+    // 类似地处理 top
+    const randomPlacementHeightRange = viewportHeight - swatchHeight - (2 * edgePadding);
+    let finalTop;
+    if (randomPlacementHeightRange >= 0) {
+      finalTop = edgePadding + (Math.random() * randomPlacementHeightRange);
+    } else {
+      finalTop = edgePadding;
+    }
+    swatch.style.top = `${finalTop}px`;
+    // --- 定位逻辑结束 ---
 
     swatch.style.zIndex = index;
 
@@ -173,7 +171,7 @@ function generateRandomSwatches() {
       const hexToCopy = colorItem.hex;
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(hexToCopy).then(() => {
-          console.log(`Color ${hexToCopy} copied to clipboard!`);
+          console.log(`Color ${hexToCopy} copied to clipboard!`); // 这个日志会在浏览器控制台显示
         }).catch(err => {
           console.error('Failed to copy color to clipboard: ', err);
         });
