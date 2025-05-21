@@ -1,13 +1,5 @@
-# Color Palette Viewer
+# Color Palette
 
-A simple web page that displays color swatches. Click a swatch to copy its HEX code.
+**Live Demo:** [https://e50914.web.app](https://e50914.web.app)
 
-## View
-
-* **Live Demo:** `https://<YOUR_FIREBASE_PROJECT_ID>.web.app`
-    * (e.g., `https://e50914.web.app` - please update with your actual URL)
-* **Locally:** Open the `public/index.html` file in your web browser.
-
-## Deployment
-
-This project is set up for automatic deployment to Firebase Hosting via GitHub Actions.
+*(请确保此链接是您正确的、已部署的在线应用地址)*
