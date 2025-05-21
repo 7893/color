@@ -1,5 +1,5 @@
 {
-	"name": "f0f8ff-color-palette",
+	"name": "color-palette",
 	"version": "1.0.0",
 	"description": "A dynamic color palette app",
 	"source": "src/index.html",

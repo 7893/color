@@ -5,7 +5,7 @@ A simple web page that displays color swatches. Click a swatch to copy its HEX c
 ## View
 
 * **Live Demo:** `https://<YOUR_FIREBASE_PROJECT_ID>.web.app`
-    * (e.g., `https://f0f8ff.web.app` - please update with your actual URL)
+    * (e.g., `https://e50914.web.app` - please update with your actual URL)
 * **Locally:** Open the `public/index.html` file in your web browser.
 
 ## Deployment

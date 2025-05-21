@@ -4,13 +4,13 @@ import { getPerformance } from "firebase/performance"; // 用于性能监控
 
 // 您提供的 Firebase 项目配置 (来自官网)
 const firebaseConfig = {
-  apiKey: "AIzaSyAOzbQhLkFAYyeM2HrpRx4vI1pfqc54Iq8",
-  authDomain: "f0f8ff.firebaseapp.com",
-  projectId: "f0f8ff",
-  storageBucket: "f0f8ff.firebasestorage.app", // 注意这里，您提供的是这个
-  messagingSenderId: "3087652183",
-  appId: "1:3087652183:web:926db6a729c777301c9a12",
-  measurementId: "G-2B498J46NM"
+  apiKey: "AIzaSyAE2SzXcfhMxf-ZeDtvWo0NVnPlzUo0T5s",
+  authDomain: "e50914.firebaseapp.com",
+  projectId: "e50914",
+  storageBucket: "e50914.firebasestorage.app",
+  messagingSenderId: "942223279536",
+  appId: "1:942223279536:web:27aa4c8a8a2b1528b68275",
+  measurementId: "G-VBW6HEHRH4"
 };
 
 // 初始化 Firebase

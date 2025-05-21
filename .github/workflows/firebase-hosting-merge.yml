@@ -34,7 +34,7 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_F0F8FF }}' # 这是您之前设置的 GitHub Secret
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_E50914 }}' # 这是您之前设置的 GitHub Secret
           channelId: live # 部署到实时频道
-          projectId: f0f8ff # 您的 Firebase 项目 ID
+          projectId: e50914 # 您的 Firebase 项目 ID
           # entryPoint: . # (可选) 如果您的 firebase.json 不在仓库根目录，可以在此指定路径。默认为仓库根目录。
