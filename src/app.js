@@ -2,7 +2,7 @@
 
 // 从 Firebase SDK 导入您需要的函数
 import { initializeApp } from "firebase/app";
-import { getPerformance } from "firebase/performance"; // 用于性能监控
+import { getPerformance } from "firebase/performance";
 
 // 这是您为新项目 e50914 提供的 Firebase 配置
 const firebaseConfig = {
@@ -15,10 +15,7 @@ const firebaseConfig = {
   measurementId: "G-VBW6HEHRH4"
 };
 
-// 初始化 Firebase
 const app = initializeApp(firebaseConfig);
-
-// 初始化 Firebase Performance Monitoring
 try {
   const perf = getPerformance(app);
   console.log("Firebase Performance Monitoring initialized for e50914.");
@@ -26,7 +23,7 @@ try {
   console.error("Error initializing Firebase Performance Monitoring for e50914:", e);
 }
 
-// --- 以下 JavaScript 逻辑完全来自您提供的原始 index.html ---
+// --- JavaScript 逻辑 (完全来自您提供的原始 index.html, 添加了日志) ---
 const masterColorsList = [
   // Original 20
   { hex: '#4285F4', name: 'Google Blue' }, { hex: '#DB4437', name: 'Google Red' },
@@ -72,7 +69,7 @@ const masterColorsList = [
   { hex: '#DEB887', name: 'Burly Wood', needsDarkText: true }
 ];
 
-let container; // 将在 DOMContentLoaded 中赋值
+let container;
 let currentTopZIndexOnClick;
 
 function debounce(func, wait) {
@@ -92,7 +89,7 @@ function generateRandomSwatches() {
     console.error('paletteContainer not found. Ensure DOM is ready and ID is correct.');
     return;
   }
-  container.innerHTML = ''; // 清空容器
+  container.innerHTML = '';
   const viewportWidth = window.innerWidth;
   const viewportHeight = window.innerHeight;
 
@@ -112,7 +109,6 @@ function generateRandomSwatches() {
     const swatch = document.createElement('div');
     swatch.classList.add('color-swatch');
     swatch.style.backgroundColor = colorItem.hex;
-
     if (colorItem.needsDarkText) {
       swatch.classList.add('text-dark');
     }
@@ -134,11 +130,52 @@ function generateRandomSwatches() {
 
     // 使用您原始 index.html 中的定位逻辑
     const edgePadding = 10;
-    const maxLeft = viewportWidth - swatchWidth - edgePadding;
-    const maxTop = viewportHeight - swatchHeight - edgePadding;
+    const maxLeft = viewportWidth - swatchWidth - edgePadding; // 色块左边缘能到达的最大x坐标
+    const maxTop = viewportHeight - swatchHeight - edgePadding;  // 色块上边缘能到达的最大y坐标
 
-    swatch.style.left = `${Math.max(edgePadding, Math.random() * maxLeft)}px`;
-    swatch.style.top = `${Math.max(edgePadding, Math.random() * maxTop)}px`;
+    const calculatedLeft = Math.max(edgePadding, Math.random() * maxLeft);
+    const calculatedTop = Math.max(edgePadding, Math.random() * maxTop);
+
+    // VVVV 添加这些调试日志 VVVV
+    const rightEdge = calculatedLeft + swatchWidth;
+    const rightViewportBoundary = viewportWidth - edgePadding; // 我们期望右边缘不超过这里
+    const bottomEdge = calculatedTop + swatchHeight;
+    const bottomViewportBoundary = viewportHeight - edgePadding; // 我们期望下边缘不超过这里
+
+    if (rightEdge > viewportWidth || calculatedLeft < 0) { // 简单检查是否超出左右边界
+      console.warn('%cSWATCH OVERFLOW/POSITIONING ISSUE (X-axis)', 'color: red; font-weight: bold;', {
+        colorName: colorItem.name,
+        viewportWidth: viewportWidth,
+        swatchWidth: swatchWidth,
+        edgePadding: edgePadding,
+        maxLeftCalculated: maxLeft, // 这是 maxLeft 的理论值
+        calculatedLeft: calculatedLeft, // 这是实际应用的 left 值
+        expectedMaxRightEdge: rightViewportBoundary, // 右边缘不应超过此值
+        actualRightEdge: rightEdge, // 实际的右边缘
+        isOverflowingRight: rightEdge > viewportWidth, // 是否超出视口右边缘
+        isBeyondPaddedRight: rightEdge > rightViewportBoundary, // 是否超出了我们期望的带padding的右边缘
+        isLeftNegative: calculatedLeft < 0 // left是否为负
+      });
+    }
+    if (bottomEdge > viewportHeight || calculatedTop < 0) { // 简单检查是否超出上下边界
+      console.warn('%cSWATCH OVERFLOW/POSITIONING ISSUE (Y-axis)', 'color: orange; font-weight: bold;', {
+        colorName: colorItem.name,
+        viewportHeight: viewportHeight,
+        swatchHeight: swatchHeight,
+        edgePadding: edgePadding,
+        maxTopCalculated: maxTop, // 这是 maxTop 的理论值
+        calculatedTop: calculatedTop, // 这是实际应用的 top 值
+        expectedMaxBottomEdge: bottomViewportBoundary, // 下边缘不应超过此值
+        actualBottomEdge: bottomEdge, // 实际的下边缘
+        isOverflowingBottom: bottomEdge > viewportHeight, // 是否超出视口下边缘
+        isBeyondPaddedBottom: bottomEdge > bottomViewportBoundary, // 是否超出了我们期望的带padding的下边缘
+        isTopNegative: calculatedTop < 0 // top是否为负
+      });
+    }
+    // ^^^^ 添加调试日志结束 ^^^^
+
+    swatch.style.left = `${calculatedLeft}px`;
+    swatch.style.top = `${calculatedTop}px`;
 
     swatch.style.zIndex = index;
 
@@ -164,7 +201,6 @@ function generateRandomSwatches() {
   });
 }
 
-// 确保在 DOM 完全加载后再执行操作 DOM 的代码
 document.addEventListener('DOMContentLoaded', () => {
   container = document.getElementById('paletteContainer');
   if (container) {
