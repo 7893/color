@@ -1,0 +1,16 @@
+{
+	"name": "f0f8ff-color-palette",
+	"version": "1.0.0",
+	"description": "A dynamic color palette app",
+	"source": "src/index.html",
+	"scripts": {
+		"dev": "parcel src/index.html --open",
+		"build": "parcel build src/index.html --dist-dir dist"
+	},
+	"dependencies": {
+		"firebase": "^11.8.0"
+	},
+	"devDependencies": {
+		"parcel": "^2.12.0"
+	}
+}
