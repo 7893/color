@@ -1,10 +1,8 @@
 // src/app.js
 
-// 从 Firebase SDK 导入您需要的函数
 import { initializeApp } from "firebase/app";
 import { getPerformance } from "firebase/performance";
 
-// 这是您为新项目 e50914 提供的 Firebase 配置
 const firebaseConfig = {
   apiKey: "AIzaSyAE2SzXcfhMxf-ZeDtvWo0NVnPlzUo0T5s",
   authDomain: "e50914.firebaseapp.com",
@@ -23,9 +21,7 @@ try {
   console.error("Error initializing Firebase Performance Monitoring for e50914:", e);
 }
 
-// --- JavaScript 逻辑 (完全来自您提供的原始 index.html, 添加了日志) ---
 const masterColorsList = [
-  // Original 20
   { hex: '#4285F4', name: 'Google Blue' }, { hex: '#DB4437', name: 'Google Red' },
   { hex: '#F4B400', name: 'Google Yellow', needsDarkText: true }, { hex: '#0F9D58', name: 'Google Green' },
   { hex: '#1877F2', name: 'Meta Blue' }, { hex: '#0078D4', name: 'Microsoft Blue' },
@@ -36,7 +32,6 @@ const masterColorsList = [
   { hex: '#DC3545', name: 'Danger Red' }, { hex: '#FFC107', name: 'Warning Yellow', needsDarkText: true },
   { hex: '#181717', name: 'GitHub Black' }, { hex: '#4A154B', name: 'Slack Purple' },
   { hex: '#00457C', name: 'PayPal Blue' }, { hex: '#000000', name: 'Uber Black' },
-  // Google Material Design Colors (Selection)
   { hex: '#F44336', name: 'Material Red 500' }, { hex: '#E91E63', name: 'Material Pink 500' },
   { hex: '#FFCDD2', name: 'Material Red 100', needsDarkText: true }, { hex: '#F8BBD0', name: 'Material Pink 100', needsDarkText: true },
   { hex: '#9C27B0', name: 'Material Purple 500' }, { hex: '#673AB7', name: 'Material Deep Purple 500' },
@@ -51,7 +46,6 @@ const masterColorsList = [
   { hex: '#9E9E9E', name: 'Material Grey 500' }, { hex: '#607D8B', name: 'Material Blue Grey 500' },
   { hex: '#BDBDBD', name: 'Material Grey 400' }, { hex: '#424242', name: 'Material Grey 800' },
   { hex: '#FAFAFA', name: 'Material Grey 50', needsDarkText: true }, { hex: '#212121', name: 'Material Grey 900' },
-  // Other Widely Used Designer Colors
   { hex: '#FFFFFF', name: 'White', needsDarkText: true }, { hex: '#333333', name: 'Dark Charcoal' },
   { hex: '#F0F8FF', name: 'Alice Blue', needsDarkText: true }, { hex: '#FAEBD7', name: 'Antique White', needsDarkText: true },
   { hex: '#FF6347', name: 'Tomato' }, { hex: '#FFD700', name: 'Gold', needsDarkText: true },
@@ -86,7 +80,7 @@ function debounce(func, wait) {
 
 function generateRandomSwatches() {
   if (!container) {
-    console.error('paletteContainer not found. Ensure DOM is ready and ID is correct.');
+    // console.error('paletteContainer not found in generateRandomSwatches.'); // 已移至 DOMContentLoaded
     return;
   }
   container.innerHTML = '';
@@ -103,7 +97,9 @@ function generateRandomSwatches() {
   const maxHeightPercent = 0.22;
 
   const minAbsSize = 80;
-  const maxAbsSize = Math.min(viewportWidth * 0.3, viewportHeight * 0.3, 250);
+  // baseMaxAbsSize 是基于视口30%和250px的初步最大值
+  const baseMaxAbsSize = Math.min(viewportWidth * 0.3, viewportHeight * 0.3, 250);
+  const edgePadding = 10;
 
   selectedColors.forEach((colorItem, index) => {
     const swatch = document.createElement('div');
@@ -118,64 +114,36 @@ function generateRandomSwatches() {
     colorInfo.innerHTML = `${colorItem.hex}<br>${colorItem.name}`;
     swatch.appendChild(colorInfo);
 
-    // 使用您原始 index.html 中的尺寸计算逻辑
-    let swatchWidth = Math.random() * (maxWidthPercent - minWidthPercent) + minWidthPercent;
-    swatchWidth = Math.max(minAbsSize, Math.min(viewportWidth * swatchWidth, maxAbsSize));
+    // 1. 计算期望尺寸 (基于百分比和绝对值限制)
+    let desiredWidth = (Math.random() * (maxWidthPercent - minWidthPercent) + minWidthPercent) * viewportWidth;
+    let swatchWidth = Math.max(minAbsSize, Math.min(desiredWidth, baseMaxAbsSize));
 
-    let swatchHeight = Math.random() * (maxHeightPercent - minHeightPercent) + minHeightPercent;
-    swatchHeight = Math.max(minAbsSize, Math.min(viewportHeight * swatchHeight, maxAbsSize));
+    let desiredHeight = (Math.random() * (maxHeightPercent - minHeightPercent) + minHeightPercent) * viewportHeight;
+    let swatchHeight = Math.max(minAbsSize, Math.min(desiredHeight, baseMaxAbsSize));
+
+    // 2. 再次限制尺寸，确保适应屏幕可用空间（减去两边padding）
+    //    并确保至少有一个很小的尺寸（例如20px），以防计算结果为0或负。
+    const maxDrawableWidth = Math.max(20, viewportWidth - (2 * edgePadding));
+    const maxDrawableHeight = Math.max(20, viewportHeight - (2 * edgePadding));
+
+    swatchWidth = Math.min(swatchWidth, maxDrawableWidth);
+    swatchHeight = Math.min(swatchHeight, maxDrawableHeight);
 
     swatch.style.width = `${swatchWidth}px`;
     swatch.style.height = `${swatchHeight}px`;
 
-    // 使用您原始 index.html 中的定位逻辑
-    const edgePadding = 10;
-    const maxLeft = viewportWidth - swatchWidth - edgePadding; // 色块左边缘能到达的最大x坐标
-    const maxTop = viewportHeight - swatchHeight - edgePadding;  // 色块上边缘能到达的最大y坐标
+    // 3. 计算定位 (使用确保边界的逻辑)
+    //    可供色块左上角随机移动的水平范围
+    const availableWidthForRandomOffset = viewportWidth - swatchWidth - (2 * edgePadding);
+    const randomXOffset = Math.random() * Math.max(0, availableWidthForRandomOffset); // 确保不乘以负数
+    const finalLeft = edgePadding + randomXOffset;
+    swatch.style.left = `${finalLeft}px`;
 
-    const calculatedLeft = Math.max(edgePadding, Math.random() * maxLeft);
-    const calculatedTop = Math.max(edgePadding, Math.random() * maxTop);
-
-    // VVVV 添加这些调试日志 VVVV
-    const rightEdge = calculatedLeft + swatchWidth;
-    const rightViewportBoundary = viewportWidth - edgePadding; // 我们期望右边缘不超过这里
-    const bottomEdge = calculatedTop + swatchHeight;
-    const bottomViewportBoundary = viewportHeight - edgePadding; // 我们期望下边缘不超过这里
-
-    if (rightEdge > viewportWidth || calculatedLeft < 0) { // 简单检查是否超出左右边界
-      console.warn('%cSWATCH OVERFLOW/POSITIONING ISSUE (X-axis)', 'color: red; font-weight: bold;', {
-        colorName: colorItem.name,
-        viewportWidth: viewportWidth,
-        swatchWidth: swatchWidth,
-        edgePadding: edgePadding,
-        maxLeftCalculated: maxLeft, // 这是 maxLeft 的理论值
-        calculatedLeft: calculatedLeft, // 这是实际应用的 left 值
-        expectedMaxRightEdge: rightViewportBoundary, // 右边缘不应超过此值
-        actualRightEdge: rightEdge, // 实际的右边缘
-        isOverflowingRight: rightEdge > viewportWidth, // 是否超出视口右边缘
-        isBeyondPaddedRight: rightEdge > rightViewportBoundary, // 是否超出了我们期望的带padding的右边缘
-        isLeftNegative: calculatedLeft < 0 // left是否为负
-      });
-    }
-    if (bottomEdge > viewportHeight || calculatedTop < 0) { // 简单检查是否超出上下边界
-      console.warn('%cSWATCH OVERFLOW/POSITIONING ISSUE (Y-axis)', 'color: orange; font-weight: bold;', {
-        colorName: colorItem.name,
-        viewportHeight: viewportHeight,
-        swatchHeight: swatchHeight,
-        edgePadding: edgePadding,
-        maxTopCalculated: maxTop, // 这是 maxTop 的理论值
-        calculatedTop: calculatedTop, // 这是实际应用的 top 值
-        expectedMaxBottomEdge: bottomViewportBoundary, // 下边缘不应超过此值
-        actualBottomEdge: bottomEdge, // 实际的下边缘
-        isOverflowingBottom: bottomEdge > viewportHeight, // 是否超出视口下边缘
-        isBeyondPaddedBottom: bottomEdge > bottomViewportBoundary, // 是否超出了我们期望的带padding的下边缘
-        isTopNegative: calculatedTop < 0 // top是否为负
-      });
-    }
-    // ^^^^ 添加调试日志结束 ^^^^
-
-    swatch.style.left = `${calculatedLeft}px`;
-    swatch.style.top = `${calculatedTop}px`;
+    //    可供色块左上角随机移动的垂直范围
+    const availableHeightForRandomOffset = viewportHeight - swatchHeight - (2 * edgePadding);
+    const randomYOffset = Math.random() * Math.max(0, availableHeightForRandomOffset); // 确保不乘以负数
+    const finalTop = edgePadding + randomYOffset;
+    swatch.style.top = `${finalTop}px`;
 
     swatch.style.zIndex = index;
 
