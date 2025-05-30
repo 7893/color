@@ -11,11 +11,10 @@
         body {
             margin: 0;
             padding: 0;
-            width: 100%;
-            min-height: 100vh;
-            /* 使用min-height以允许内容溢出时页面可以滚动 */
-            overflow-x: hidden;
-            /* 防止任何意外的水平滚动 */
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            /* 绝对需要，防止任何滚动 */
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             background-color: #1C1C1E;
             -webkit-font-smoothing: antialiased;
@@ -23,23 +22,16 @@
             text-rendering: optimizeLegibility;
         }
 
-        /* --- 核心布局：CSS Grid 容器 --- */
+        /* --- 布局容器：作为绝对定位的参照物 --- */
         .palette-container {
-            box-sizing: border-box;
+            position: relative;
             width: 100%;
-            padding: 20px;
-            /* 在所有设备上都提供一个呼吸空间 */
-            display: grid;
-            /* 响应式核心：自动填充网格列，每列最小140px，最大为1个弹性单位(fr) */
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            /* 自动决定行高，最小120px，并允许内容撑开 */
-            grid-auto-rows: minmax(120px, auto);
-            gap: 20px;
-            /* 色块之间的间距 */
+            height: 100%;
         }
 
-        /* --- 色块样式 --- */
+        /* --- 色块样式：回归绝对定位 --- */
         .color-swatch {
+            position: absolute;
             box-sizing: border-box;
             border-radius: 12px;
             box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
@@ -53,29 +45,12 @@
             overflow: hidden;
             cursor: pointer;
             opacity: 0;
-            /* 用于实现加载时的淡入效果 */
-            will-change: transform, opacity;
-            min-height: 120px;
-            /* 保证常规色块的基础高度 */
-        }
-
-        /* 使用JS随机添加的class，用于实现砖石布局 */
-        .color-swatch.wide {
-            grid-column: span 2;
-        }
-
-        .color-swatch.tall {
-            grid-row: span 2;
-            min-height: 260px;
-            /* 高度约为 (120px * 2) + 20px gap */
+            will-change: transform, opacity, z-index;
         }
 
         .color-swatch:hover {
-            transform: translateY(-5px) scale(1.03);
+            transform: scale(1.05);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
-            z-index: 10;
-            position: relative;
-            /* z-index 需要 position 配合生效 */
         }
 
         /* --- 色块内部信息样式 --- */
@@ -85,7 +60,6 @@
             padding: 6px 10px;
             border-radius: 6px;
             font-size: clamp(0.7rem, 1.5vw, 0.85rem);
-            /* 字体大小在范围内自适应 */
             font-weight: 500;
             line-height: 1.3;
             width: 95%;
@@ -101,31 +75,9 @@
             transform: translateY(0);
         }
 
-        /* 针对亮色背景，使用深色文字 */
         .color-swatch.text-dark .color-info {
             color: #121212;
             background-color: rgba(255, 255, 255, 0.4);
-        }
-
-        /* --- 移动端优化：屏幕小于480px时，强制单列布局 --- */
-        /* --- 移动端优化：屏幕小于480px时，强制单列布局 --- */
-        @media (max-width: 480px) {
-            .palette-container {
-                padding: 15px;
-                /* 移动端padding可以小一些 */
-                gap: 15px;
-            }
-
-            .color-swatch.wide {
-                grid-column: span 1;
-                /* 在单列布局中，取消跨列 */
-            }
-
-            /*
-   之前那个空的 .color-swatch.tall 规则已被移除，
-   以解决 "emptyRules" 的提示。
-   现在高的色块在手机上会保持其原有高度。
-  */
         }
     </style>
 </head>
@@ -135,20 +87,8 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-performance.js"></script>
-
     <script>
-        // 您的 Firebase 项目配置
-        const firebaseConfig = {
-            apiKey: "AIzaSyAE2SzXcfhMxf-ZeDtvWo0NVnPlzUo0T5s",
-            authDomain: "e50914.firebaseapp.com",
-            projectId: "e50914",
-            storageBucket: "e50914.appspot.com",
-            messagingSenderId: "942223279536",
-            appId: "1:942223279536:web:27aa4c8a8a2b1528b68275",
-            measurementId: "G-VBW6HEHRH4"
-        };
-
-        // 初始化 Firebase 和 Performance Monitoring
+        const firebaseConfig = { apiKey: "AIzaSyAE2SzXcfhMxf-ZeDtvWo0NVnPlzUo0T5s", authDomain: "e50914.firebaseapp.com", projectId: "e50914", storageBucket: "e50914.appspot.com", messagingSenderId: "942223279536", appId: "1:942223279536:web:27aa4c8a8a2b1528b68275", measurementId: "G-VBW6HEHRH4" };
         try {
             const app = firebase.initializeApp(firebaseConfig);
             const perf = firebase.performance(app);
@@ -159,11 +99,10 @@
     </script>
 
     <script>
-        const masterColorsList = [
-            { hex: '#4285F4', name: 'Google Blue' }, { hex: '#DB4437', name: 'Google Red' }, { hex: '#F4B400', name: 'Google Yellow', needsDarkText: true }, { hex: '#0F9D58', name: 'Google Green' }, { hex: '#1877F2', name: 'Meta Blue' }, { hex: '#0078D4', name: 'Microsoft Blue' }, { hex: '#86868B', name: 'Apple Gray' }, { hex: '#FF9900', name: 'Amazon Orange', needsDarkText: true }, { hex: '#1DB954', name: 'Spotify Green' }, { hex: '#E50914', name: 'Netflix Red' }, { hex: '#1DA1F2', name: 'Twitter Blue' }, { hex: '#0A66C2', name: 'LinkedIn Blue' }, { hex: '#007BFF', name: 'Primary Blue' }, { hex: '#28A745', name: 'Success Green' }, { hex: '#DC3545', name: 'Danger Red' }, { hex: '#FFC107', name: 'Warning Yellow', needsDarkText: true }, { hex: '#181717', name: 'GitHub Black' }, { hex: '#4A154B', name: 'Slack Purple' }, { hex: '#00457C', name: 'PayPal Blue' }, { hex: '#000000', name: 'Uber Black' }, { hex: '#F44336', name: 'Material Red' }, { hex: '#E91E63', name: 'Material Pink' }, { hex: '#FFCDD2', name: 'Material Red 100', needsDarkText: true }, { hex: '#F8BBD0', name: 'Material Pink 100', needsDarkText: true }, { hex: '#9C27B0', name: 'Material Purple' }, { hex: '#673AB7', name: 'Material Deep Purple' }, { hex: '#3F51B5', name: 'Material Indigo' }, { hex: '#7E57C2', name: 'Material Deep Purple 400' }, { hex: '#2196F3', name: 'Material Blue' }, { hex: '#03A9F4', name: 'Material Light Blue' }, { hex: '#00BCD4', name: 'Material Cyan' }, { hex: '#009688', name: 'Material Teal' }, { hex: '#90CAF9', name: 'Material Blue 200', needsDarkText: true }, { hex: '#4CAF50', name: 'Material Green' }, { hex: '#8BC34A', name: 'Material Light Green' }, { hex: '#CDDC39', name: 'Material Lime', needsDarkText: true }, { hex: '#AED581', name: 'Material Light Green 300', needsDarkText: true }, { hex: '#FFEB3B', name: 'Material Yellow', needsDarkText: true }, { hex: '#FFC107', name: 'Material Amber', needsDarkText: true }, { hex: '#FF9800', name: 'Material Orange' }, { hex: '#FF5722', name: 'Material Deep Orange' }, { hex: '#795548', name: 'Material Brown' }, { hex: '#9E9E9E', name: 'Material Grey' }, { hex: '#607D8B', name: 'Material Blue Grey' }, { hex: '#FFFFFF', name: 'White', needsDarkText: true }, { hex: '#333333', name: 'Dark Charcoal' }, { hex: '#F0F8FF', name: 'Alice Blue', needsDarkText: true }, { hex: '#FF6347', name: 'Tomato' }, { hex: '#FFD700', name: 'Gold', needsDarkText: true }, { hex: '#4682B4', name: 'Steel Blue' }, { hex: '#D2691E', name: 'Chocolate' }, { hex: '#20B2AA', name: 'Light Sea Green' }, { hex: '#C71585', name: 'Medium Violet Red' }, { hex: '#6A5ACD', name: 'Slate Blue' }
-        ];
+        const masterColorsList = [{ hex: '#4285F4', name: 'Google Blue' }, { hex: '#DB4437', name: 'Google Red' }, { hex: '#F4B400', name: 'Google Yellow', needsDarkText: true }, { hex: '#0F9D58', name: 'Google Green' }, { hex: '#1877F2', name: 'Meta Blue' }, { hex: '#0078D4', name: 'Microsoft Blue' }, { hex: '#86868B', name: 'Apple Gray' }, { hex: '#FF9900', name: 'Amazon Orange', needsDarkText: true }, { hex: '#1DB954', name: 'Spotify Green' }, { hex: '#E50914', name: 'Netflix Red' }, { hex: '#1DA1F2', name: 'Twitter Blue' }, { hex: '#0A66C2', name: 'LinkedIn Blue' }, { hex: '#007BFF', name: 'Primary Blue' }, { hex: '#28A745', name: 'Success Green' }, { hex: '#DC3545', name: 'Danger Red' }, { hex: '#FFC107', name: 'Warning Yellow', needsDarkText: true }, { hex: '#181717', name: 'GitHub Black' }, { hex: '#4A154B', name: 'Slack Purple' }, { hex: '#00457C', name: 'PayPal Blue' }, { hex: '#000000', name: 'Uber Black' }, { hex: '#F44336', name: 'Material Red' }, { hex: '#E91E63', name: 'Material Pink' }, { hex: '#FFCDD2', name: 'Material Red 100', needsDarkText: true }, { hex: '#F8BBD0', name: 'Material Pink 100', needsDarkText: true }, { hex: '#9C27B0', name: 'Material Purple' }, { hex: '#673AB7', name: 'Material Deep Purple' }, { hex: '#3F51B5', name: 'Material Indigo' }, { hex: '#7E57C2', name: 'Material Deep Purple 400' }, { hex: '#2196F3', name: 'Material Blue' }, { hex: '#03A9F4', name: 'Material Light Blue' }, { hex: '#00BCD4', name: 'Material Cyan' }, { hex: '#009688', name: 'Material Teal' }, { hex: '#90CAF9', name: 'Material Blue 200', needsDarkText: true }, { hex: '#4CAF50', name: 'Material Green' }, { hex: '#8BC34A', name: 'Material Light Green' }, { hex: '#CDDC39', name: 'Material Lime', needsDarkText: true }, { hex: '#AED581', name: 'Material Light Green 300', needsDarkText: true }, { hex: '#FFEB3B', name: 'Material Yellow', needsDarkText: true }, { hex: '#FFC107', name: 'Material Amber', needsDarkText: true }, { hex: '#FF9800', name: 'Material Orange' }, { hex: '#FF5722', name: 'Material Deep Orange' }, { hex: '#795548', name: 'Material Brown' }, { hex: '#9E9E9E', name: 'Material Grey' }, { hex: '#607D8B', name: 'Material Blue Grey' }, { hex: '#FFFFFF', name: 'White', needsDarkText: true }, { hex: '#333333', name: 'Dark Charcoal' }, { hex: '#F0F8FF', name: 'Alice Blue', needsDarkText: true }, { hex: '#FF6347', name: 'Tomato' }, { hex: '#FFD700', name: 'Gold', needsDarkText: true }, { hex: '#4682B4', name: 'Steel Blue' }, { hex: '#D2691E', name: 'Chocolate' }, { hex: '#20B2AA', name: 'Light Sea Green' }, { hex: '#C71585', name: 'Medium Violet Red' }, { hex: '#6A5ACD', name: 'Slate Blue' }];
 
         let container;
+        let highestZIndex = 0;
 
         function debounce(func, wait) {
             let timeout;
@@ -182,7 +121,8 @@
             container.innerHTML = '';
 
             const shuffledMasterList = [...masterColorsList].sort(() => 0.5 - Math.random());
-            const selectedColors = shuffledMasterList.slice(0, 30);
+            const selectedColors = shuffledMasterList.slice(0, 20);
+            highestZIndex = selectedColors.length;
 
             selectedColors.forEach((colorItem, index) => {
                 const swatch = document.createElement('div');
@@ -192,37 +132,54 @@
                     swatch.classList.add('text-dark');
                 }
 
-                // 随机决定色块是否跨行或跨列
-                const isWide = Math.random() < 0.12; // 12% 的几率更宽
-                const isTall = Math.random() < 0.12; // 12% 的几率更高
-                if (isWide) swatch.classList.add('wide');
-                if (isTall) swatch.classList.add('tall');
-
                 const colorInfo = document.createElement('div');
                 colorInfo.classList.add('color-info');
                 colorInfo.innerHTML = `${colorItem.name}<br>${colorItem.hex}`;
                 swatch.appendChild(colorInfo);
 
+                // --- 全新的智能定位算法 ---
+
+                // 1. 随机生成尺寸
+                const minSize = Math.min(container.clientWidth, container.clientHeight) * 0.15;
+                const maxSize = Math.min(container.clientWidth, container.clientHeight) * 0.25;
+                const swatchWidth = Math.random() * (maxSize - minSize) + minSize;
+                const swatchHeight = Math.random() * (maxSize - minSize) + minSize;
+                swatch.style.width = `${swatchWidth}px`;
+                swatch.style.height = `${swatchHeight}px`;
+
+                // 2. 计算可安全放置的最大 left 和 top 值
+                const maxLeft = container.clientWidth - swatchWidth;
+                const maxTop = container.clientHeight - swatchHeight;
+
+                // 3. 在安全区域内随机定位
+                swatch.style.left = `${Math.random() * maxLeft}px`;
+                swatch.style.top = `${Math.random() * maxTop}px`;
+
+                // 4. 设置初始的层叠顺序
+                swatch.style.zIndex = index;
+
+                // --- 交互事件 ---
+
                 swatch.addEventListener('click', function () {
+                    // 点击时，将当前色块提到最顶层
+                    highestZIndex++;
+                    this.style.zIndex = highestZIndex;
+
                     const hexToCopy = colorItem.hex;
                     if (navigator.clipboard && navigator.clipboard.writeText) {
                         navigator.clipboard.writeText(hexToCopy).then(() => {
                             console.log(`Color ${hexToCopy} copied to clipboard!`);
-                            // 此处暂不添加视觉反馈
                         }).catch(err => {
-                            console.error('Failed to copy color to clipboard: ', err);
+                            console.error('Failed to copy color: ', err);
                         });
-                    } else {
-                        console.warn('Clipboard API not available. Could not copy color.');
                     }
                 });
 
                 container.appendChild(swatch);
 
-                // 错开的淡入动画效果
                 setTimeout(() => {
                     swatch.style.opacity = '1';
-                }, index * 35 + 50);
+                }, index * 40 + 50);
             });
         }
 
@@ -231,8 +188,6 @@
             if (container) {
                 generateRandomSwatches();
                 window.addEventListener('resize', debounce(generateRandomSwatches, 250));
-            } else {
-                console.error('Element with ID "paletteContainer" not found.');
             }
         });
     </script>
