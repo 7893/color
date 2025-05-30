@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Color Palette</title>
     <style>
-        /* --- 基础与重置 --- */
         html,
         body {
             margin: 0;
@@ -14,24 +13,24 @@
             width: 100vw;
             height: 100vh;
             overflow: hidden;
-            /* 绝对需要，防止任何滚动 */
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             background-color: #1C1C1E;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            text-rendering: optimizeLegibility;
         }
 
-        /* --- 布局容器：作为绝对定位的参照物 --- */
+        /* --- "隐形网格" 容器 --- */
         .palette-container {
-            position: relative;
+            display: grid;
             width: 100%;
             height: 100%;
+            /* 创建一个 20x20 的精细网格作为布局画布 */
+            grid-template-columns: repeat(20, 1fr);
+            grid-template-rows: repeat(20, 1fr);
         }
 
-        /* --- 色块样式：回归绝对定位 --- */
+        /* --- 色块作为网格项 --- */
         .color-swatch {
-            position: absolute;
+            /* 不再需要 position: absolute */
             box-sizing: border-box;
             border-radius: 12px;
             box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
@@ -46,14 +45,16 @@
             cursor: pointer;
             opacity: 0;
             will-change: transform, opacity, z-index;
+            /* 通过JS来控制它在网格上的位置和大小 */
         }
 
         .color-swatch:hover {
             transform: scale(1.05);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+            /* 鼠标悬停时，提高层级以确保在最前 */
+            z-index: 100 !important;
         }
 
-        /* --- 色块内部信息样式 --- */
         .color-info {
             background-color: rgba(0, 0, 0, 0.25);
             color: #EAEAEA;
@@ -124,6 +125,9 @@
             const selectedColors = shuffledMasterList.slice(0, 20);
             highestZIndex = selectedColors.length;
 
+            // 定义网格大小，与CSS中的 repeat(20, 1fr) 对应
+            const GRID_SIZE = 20;
+
             selectedColors.forEach((colorItem, index) => {
                 const swatch = document.createElement('div');
                 swatch.classList.add('color-swatch');
@@ -137,36 +141,30 @@
                 colorInfo.innerHTML = `${colorItem.name}<br>${colorItem.hex}`;
                 swatch.appendChild(colorInfo);
 
-                // --- 全新的智能定位算法 ---
+                // --- 基于"隐形网格"的随机定位和定大小算法 ---
 
-                // 1. 随机生成尺寸
-                const minSize = Math.min(container.clientWidth, container.clientHeight) * 0.15;
-                const maxSize = Math.min(container.clientWidth, container.clientHeight) * 0.25;
-                const swatchWidth = Math.random() * (maxSize - minSize) + minSize;
-                const swatchHeight = Math.random() * (maxSize - minSize) + minSize;
-                swatch.style.width = `${swatchWidth}px`;
-                swatch.style.height = `${swatchHeight}px`;
+                // 1. 随机决定色块的尺寸（跨越几行几列）
+                const colSpan = Math.floor(Math.random() * 4) + 4; // 随机跨 4-7 列
+                const rowSpan = Math.floor(Math.random() * 4) + 4; // 随机跨 4-7 行
 
-                // 2. 计算可安全放置的最大 left 和 top 值
-                const maxLeft = container.clientWidth - swatchWidth;
-                const maxTop = container.clientHeight - swatchHeight;
+                // 2. 随机决定色块的起始位置，并确保它不会超出网格边界
+                const colStart = Math.floor(Math.random() * (GRID_SIZE - colSpan + 1)) + 1;
+                const rowStart = Math.floor(Math.random() * (GRID_SIZE - rowSpan + 1)) + 1;
 
-                // 3. 在安全区域内随机定位
-                swatch.style.left = `${Math.random() * maxLeft}px`;
-                swatch.style.top = `${Math.random() * maxTop}px`;
+                // 3. 将计算出的位置和大小应用到 style
+                swatch.style.gridColumn = `${colStart} / span ${colSpan}`;
+                swatch.style.gridRow = `${rowStart} / span ${rowSpan}`;
 
-                // 4. 设置初始的层叠顺序
+                // 4. 设置初始的层叠顺序，以产生重叠效果
                 swatch.style.zIndex = index;
 
                 // --- 交互事件 ---
-
                 swatch.addEventListener('click', function () {
-                    // 点击时，将当前色块提到最顶层
                     highestZIndex++;
                     this.style.zIndex = highestZIndex;
 
                     const hexToCopy = colorItem.hex;
-                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                    if (navigator.clipboard) {
                         navigator.clipboard.writeText(hexToCopy).then(() => {
                             console.log(`Color ${hexToCopy} copied to clipboard!`);
                         }).catch(err => {
