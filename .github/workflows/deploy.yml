@@ -1,6 +1,6 @@
 # .github/workflows/deploy.yml
 
-name: Build and Deploy
+name: Build and Deploy to Firebase Hosting
 
 on:
   push:
@@ -10,10 +10,10 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # 之前您工作流中的 permissions 部分，如果还需要预览部署功能，记得加回来
+    # 如果您需要更细致的权限控制或针对 pull request 的操作，可以取消注释并调整这里的 permissions:
     # permissions:
     #   contents: read
-    #   pull-requests: write 
+    #   pull-requests: write # 例如，如果部署预览频道并需要在PR中留言
 
     steps:
       - name: Checkout code
@@ -22,13 +22,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 22 # 您在之前的代码中使用了 22
           cache: 'pnpm'
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4.0.0  # <--- 修改这里，从 @v3 更新到 @v4.0.0 (或 @v4)
+        uses: pnpm/action-setup@v4.0.0 # <--- 这是主要的更新点
         with:
-          version: 8
+          version: 8 # 指定您希望使用的 pnpm 版本
 
       - name: Install dependencies
         run: pnpm install
@@ -41,7 +41,7 @@ jobs:
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_E50914 }}
-          projectId: e50914
-          # 如果您之前的channelId逻辑是根据PR和main分支动态的，可以改回去
-          # channelId: ${{ github.event_name == 'pull_request' && format('pr-{0}-7d', github.event.number) || 'live' }}
-          channelId: live # 当前是固定 live
+          projectId: e50914 # 您的 Firebase 项目 ID
+          # 如果您希望部署到预览频道或有更复杂的频道逻辑，可以修改这里的 channelId
+          # 例如: channelId: ${{ github.event_name == 'pull_request' && format('pr-{0}-7d', github.event.number) || 'live' }}
+          channelId: live # 当前固定部署到 live 频道
