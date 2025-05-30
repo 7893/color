@@ -18,34 +18,48 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        /* 容器需要有3D变换的视域，让旋转更有深度感 */
         .palette-container {
-            display: grid;
+            position: relative;
             width: 100%;
             height: 100%;
-            grid-template-columns: repeat(100, 1fr);
-            grid-template-rows: repeat(100, 1fr);
+            perspective: 1000px;
         }
 
         .color-swatch {
+            position: absolute;
             box-sizing: border-box;
             border-radius: 12px;
-            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
             align-items: center;
             padding: 10px;
             text-align: center;
-            transition: transform 0.25s ease-out, box-shadow 0.25s ease-out, opacity 0.4s ease-out;
-            overflow: hidden;
             cursor: pointer;
+            will-change: transform, opacity;
+
+            /* 初始状态：在屏幕顶端外，完全透明 */
             opacity: 0;
-            will-change: transform, opacity, z-index;
+            transform: translateY(-150%) rotateX(45deg) scale(1.1);
+
+            /* 动画过渡效果：使用贝塞尔曲线模拟物理感 */
+            transition: transform 1.2s cubic-bezier(0.2, 1, 0.3, 1), opacity 0.8s ease-in;
+        }
+
+        /* 最终状态：当色块“掉落”后，应用这个class */
+        .color-swatch.is-settled {
+            opacity: 1;
+            /* transform由JS动态设置 */
         }
 
         .color-swatch:hover {
-            transform: scale(1.05);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+            /* 悬停时放大并上浮，阴影更重 */
+            transform: scale(1.08) !important;
+            /* !important用于覆盖JS设置的transform */
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.5);
+            transition: transform 0.25s ease-out, box-shadow 0.25s ease-out;
             z-index: 100 !important;
         }
 
@@ -59,15 +73,6 @@
             line-height: 1.3;
             width: 95%;
             word-break: break-all;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: opacity 0.2s ease-out, transform 0.2s ease-out;
-            transition-delay: 0.05s;
-        }
-
-        .color-swatch:hover .color-info {
-            opacity: 1;
-            transform: translateY(0);
         }
 
         .color-swatch.text-dark .color-info {
@@ -81,14 +86,9 @@
     <div class="palette-container" id="paletteContainer"></div>
 
     <script type="module">
-        // 步骤1: 从 Firebase 的 CDN 导入所需的函数 (不再使用全局 firebase 对象)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
         import { getPerformance } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-performance.js";
-
-        // 步骤2: 您的 Firebase 项目配置 (保持不变)
         const firebaseConfig = { apiKey: "AIzaSyAE2SzXcfhMxf-ZeDtvWo0NVnPlzUo0T5s", authDomain: "e50914.firebaseapp.com", projectId: "e50914", storageBucket: "e50914.appspot.com", messagingSenderId: "942223279536", appId: "1:942223279536:web:27aa4c8a8a2b1528b68275", measurementId: "G-VBW6HEHRH4" };
-
-        // 步骤3: 初始化 Firebase (使用导入的函数)
         try {
             const app = initializeApp(firebaseConfig);
             const perf = getPerformance(app);
@@ -97,20 +97,11 @@
             console.error("Failed to initialize Firebase:", e);
         }
 
-        // 步骤4: 您的应用主逻辑 (现在也包含在这个模块中)
+        // 应用主逻辑 (物理堆叠算法)
         const masterColorsList = [{ hex: '#4285F4', name: 'Google Blue' }, { hex: '#DB4437', name: 'Google Red' }, { hex: '#F4B400', name: 'Google Yellow', needsDarkText: true }, { hex: '#0F9D58', name: 'Google Green' }, { hex: '#1877F2', name: 'Meta Blue' }, { hex: '#0078D4', name: 'Microsoft Blue' }, { hex: '#86868B', name: 'Apple Gray' }, { hex: '#FF9900', name: 'Amazon Orange', needsDarkText: true }, { hex: '#1DB954', name: 'Spotify Green' }, { hex: '#E50914', name: 'Netflix Red' }, { hex: '#1DA1F2', name: 'Twitter Blue' }, { hex: '#0A66C2', name: 'LinkedIn Blue' }, { hex: '#007BFF', name: 'Primary Blue' }, { hex: '#28A745', name: 'Success Green' }, { hex: '#DC3545', name: 'Danger Red' }, { hex: '#FFC107', name: 'Warning Yellow', needsDarkText: true }, { hex: '#181717', name: 'GitHub Black' }, { hex: '#4A154B', name: 'Slack Purple' }, { hex: '#00457C', name: 'PayPal Blue' }, { hex: '#000000', name: 'Uber Black' }, { hex: '#F44336', name: 'Material Red' }, { hex: '#E91E63', name: 'Material Pink' }, { hex: '#FFCDD2', name: 'Material Red 100', needsDarkText: true }, { hex: '#F8BBD0', name: 'Material Pink 100', needsDarkText: true }, { hex: '#9C27B0', name: 'Material Purple' }, { hex: '#673AB7', name: 'Material Deep Purple' }, { hex: '#3F51B5', name: 'Material Indigo' }, { hex: '#7E57C2', name: 'Material Deep Purple 400' }, { hex: '#2196F3', name: 'Material Blue' }, { hex: '#03A9F4', name: 'Material Light Blue' }, { hex: '#00BCD4', name: 'Material Cyan' }, { hex: '#009688', name: 'Material Teal' }, { hex: '#90CAF9', name: 'Material Blue 200', needsDarkText: true }, { hex: '#4CAF50', name: 'Material Green' }, { hex: '#8BC34A', name: 'Material Light Green' }, { hex: '#CDDC39', name: 'Material Lime', needsDarkText: true }, { hex: '#AED581', name: 'Material Light Green 300', needsDarkText: true }, { hex: '#FFEB3B', name: 'Material Yellow', needsDarkText: true }, { hex: '#FFC107', name: 'Material Amber', needsDarkText: true }, { hex: '#FF9800', name: 'Material Orange' }, { hex: '#FF5722', name: 'Material Deep Orange' }, { hex: '#795548', name: 'Material Brown' }, { hex: '#9E9E9E', name: 'Material Grey' }, { hex: '#607D8B', name: 'Material Blue Grey' }, { hex: '#FFFFFF', name: 'White', needsDarkText: true }, { hex: '#333333', name: 'Dark Charcoal' }, { hex: '#F0F8FF', name: 'Alice Blue', needsDarkText: true }, { hex: '#FF6347', name: 'Tomato' }, { hex: '#FFD700', 'name': 'Gold', needsDarkText: true }, { hex: '#4682B4', name: 'Steel Blue' }, { hex: '#D2691E', name: 'Chocolate' }, { hex: '#20B2AA', name: 'Light Sea Green' }, { hex: '#C71585', name: 'Medium Violet Red' }, { hex: '#6A5ACD', name: 'Slate Blue' }];
-
-        const MIN_SWATCH_COUNT = 14;
-        const MAX_SWATCH_COUNT = 20;
 
         let container;
         let highestZIndex = 0;
-
-        function getRandomInt(min, max) {
-            min = Math.ceil(min);
-            max = Math.floor(max);
-            return Math.floor(Math.random() * (max - min + 1)) + min;
-        }
 
         function debounce(func, wait) {
             let timeout;
@@ -124,35 +115,46 @@
         function generateRandomSwatches() {
             if (!container) return;
             container.innerHTML = '';
-            const swatchCount = getRandomInt(MIN_SWATCH_COUNT, MAX_SWATCH_COUNT);
+
             const shuffledMasterList = [...masterColorsList].sort(() => 0.5 - Math.random());
-            const selectedColors = shuffledMasterList.slice(0, swatchCount);
+            const selectedColors = shuffledMasterList.slice(0, 18);
             highestZIndex = selectedColors.length;
-            const GRID_UNITS = 100;
+
             const containerWidth = container.clientWidth;
             const containerHeight = container.clientHeight;
-            const oneCol = containerWidth / GRID_UNITS;
-            const oneRow = containerHeight / GRID_UNITS;
+
             selectedColors.forEach((colorItem, index) => {
                 const swatch = document.createElement('div');
                 swatch.classList.add('color-swatch');
                 swatch.style.backgroundColor = colorItem.hex;
                 if (colorItem.needsDarkText) swatch.classList.add('text-dark');
+
                 const colorInfo = document.createElement('div');
                 colorInfo.classList.add('color-info');
                 colorInfo.innerHTML = `${colorItem.name}<br>${colorItem.hex}`;
                 swatch.appendChild(colorInfo);
+
+                // --- 物理堆叠定位算法 ---
+
+                // 1. 设定色块的尺寸
                 const smallerDim = Math.min(containerWidth, containerHeight);
-                const minSize = smallerDim * 0.12;
-                const maxSize = smallerDim * 0.22;
-                const randomSize = Math.random() * (maxSize - minSize) + minSize;
-                const colSpan = Math.max(5, Math.round(randomSize / oneCol));
-                const rowSpan = Math.max(5, Math.round(randomSize / oneRow));
-                const colStart = Math.floor(Math.random() * (GRID_UNITS - colSpan + 1)) + 1;
-                const rowStart = Math.floor(Math.random() * (GRID_UNITS - rowSpan + 1)) + 1;
-                swatch.style.gridColumn = `${colStart} / span ${colSpan}`;
-                swatch.style.gridRow = `${rowStart} / span ${rowSpan}`;
+                const size = smallerDim * 0.2; // 固定一个相对优雅的尺寸
+                swatch.style.width = `${size}px`;
+                swatch.style.height = `${size}px`;
+
+                // 2. 设定初始的、屏幕外的随机水平位置
+                swatch.style.left = `${Math.random() * (containerWidth - size)}px`;
+
+                // 3. 计算最终“落点”的随机变换效果
+                // 目标区域：屏幕中下部一个比色块稍大的区域
+                const targetX = (containerWidth / 2) + (Math.random() - 0.5) * (smallerDim * 0.4);
+                const targetY = (containerHeight / 2) + (Math.random() - 0.5) * (smallerDim * 0.3);
+                const rotation = (Math.random() - 0.5) * 30; // -15到+15度的随机旋转
+                const finalTransform = `translate3d(${targetX - size / 2}px, ${targetY}px, 0) rotate(${rotation}deg)`;
+
+                // 4. 设置初始层级
                 swatch.style.zIndex = index;
+
                 swatch.addEventListener('click', function () {
                     highestZIndex++;
                     this.style.zIndex = highestZIndex;
@@ -160,13 +162,17 @@
                     if (navigator.clipboard) {
                         navigator.clipboard.writeText(hexToCopy).then(() => {
                             console.log(`Color ${hexToCopy} copied to clipboard!`);
-                        }).catch(err => {
-                            console.error('Failed to copy color: ', err);
                         });
                     }
                 });
+
                 container.appendChild(swatch);
-                setTimeout(() => { swatch.style.opacity = '1'; }, index * 35 + 50);
+
+                // 5. 错开时间，触发“掉落”动画
+                setTimeout(() => {
+                    swatch.style.transform = finalTransform;
+                    swatch.classList.add('is-settled');
+                }, index * 100 + 50);
             });
         }
 
