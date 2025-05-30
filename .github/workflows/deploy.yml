@@ -1,0 +1,37 @@
+# .github/workflows/deploy.yml
+
+name: Deploy to Firebase Hosting
+
+# 触发器：在推送到main分支或创建/更新Pull Request时运行
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+# 设置任务的默认权限，增强安全性
+permissions:
+  contents: read
+  pull-requests: write # 允许Action在PR下发表评论（例如预览URL）
+
+jobs:
+  build_and_deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    steps:
+      # 第一步：检出代码
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 第二步：部署到 Firebase Hosting
+      # 这个步骤会根据触发事件（push或pull_request）来决定部署到哪个频道
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_E50914 }}'
+          projectId: e50914
+          # 条件化设置频道ID：
+          # 如果是PR，创建一个有时效性的预览频道（例如pr-123-7d，7天后自动清理）
+          # 如果是推送到main分支，则部署到默认的live频道
+          channelId: ${{ github.event_name == 'pull_request' && format('pr-{0}-7d', github.event.number) || 'live' }}
