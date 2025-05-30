@@ -17,7 +17,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22        # ✅ 指定主版本，自动获取最新 patch（例如 22.16.0）
-          cache: npm              # ✅ 如果你使用 npm 构建，可加快缓存速度
 
       - name: Install dependencies
         run: npm install          # ✅ 可替代 pnpm；避免额外安装 pnpm 的步骤
