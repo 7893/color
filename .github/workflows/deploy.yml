@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-22.04  # ✅ 推荐使用长期支持的明确版本，避免 ubuntu-latest 的潜在变动
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout repo
@@ -16,18 +16,21 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22        # ✅ 指定主版本，自动获取最新 patch（例如 22.16.0）
+          node-version: 22
+
+      - name: Install pnpm
+        run: npm install -g pnpm
 
       - name: Install dependencies
-        run: npm install          # ✅ 可替代 pnpm；避免额外安装 pnpm 的步骤
+        run: pnpm install
 
       - name: Build project
-        run: npm run build        # ✅ 确保 package.json 中有 build 脚本（如果你项目需要）
+        run: pnpm run build
 
       - name: Deploy to Firebase
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_E50914 }}
+          repoToken: "${{ secrets.GITHUB_TOKEN }}"
+          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_E50914 }}"
           channelId: live
-          projectId: e50914       # ❗请根据你的 Firebase 项目 ID 替换这个值
+          projectId: e50914
