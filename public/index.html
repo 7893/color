@@ -18,7 +18,6 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* 容器需要有3D变换的视域，让旋转更有深度感 */
         .palette-container {
             position: relative;
             width: 100%;
@@ -38,29 +37,26 @@
             padding: 10px;
             text-align: center;
             cursor: pointer;
-            will-change: transform, opacity;
+            will-change: transform, opacity, box-shadow;
 
-            /* 初始状态：在屏幕顶端外，完全透明 */
+            /* 初始状态 */
             opacity: 0;
             transform: translateY(-150%) rotateX(45deg) scale(1.1);
 
-            /* 动画过渡效果：使用贝塞尔曲线模拟物理感 */
-            transition: transform 1.2s cubic-bezier(0.2, 1, 0.3, 1), opacity 0.8s ease-in;
+            /* 动画过渡效果 */
+            /* 注意：现在 transform 的过渡主要用于JS的动态修改 */
+            transition: transform 1.2s cubic-bezier(0.2, 1, 0.3, 1), opacity 0.8s ease-in, box-shadow 0.25s ease-out;
         }
 
-        /* 最终状态：当色块“掉落”后，应用这个class */
         .color-swatch.is-settled {
             opacity: 1;
-            /* transform由JS动态设置 */
         }
 
+        /* 关键修正：移除这里的 :hover transform 规则，
+      将其完全交给 JavaScript 控制，以避免冲突。
+    */
         .color-swatch:hover {
-            /* 悬停时放大并上浮，阴影更重 */
-            transform: scale(1.08) !important;
-            /* !important用于覆盖JS设置的transform */
             box-shadow: 0 12px 25px rgba(0, 0, 0, 0.5);
-            transition: transform 0.25s ease-out, box-shadow 0.25s ease-out;
-            z-index: 100 !important;
         }
 
         .color-info {
@@ -97,7 +93,7 @@
             console.error("Failed to initialize Firebase:", e);
         }
 
-        // 应用主逻辑 (物理堆叠算法)
+        // 应用主逻辑 (修正了交互动画)
         const masterColorsList = [{ hex: '#4285F4', name: 'Google Blue' }, { hex: '#DB4437', name: 'Google Red' }, { hex: '#F4B400', name: 'Google Yellow', needsDarkText: true }, { hex: '#0F9D58', name: 'Google Green' }, { hex: '#1877F2', name: 'Meta Blue' }, { hex: '#0078D4', name: 'Microsoft Blue' }, { hex: '#86868B', name: 'Apple Gray' }, { hex: '#FF9900', name: 'Amazon Orange', needsDarkText: true }, { hex: '#1DB954', name: 'Spotify Green' }, { hex: '#E50914', name: 'Netflix Red' }, { hex: '#1DA1F2', name: 'Twitter Blue' }, { hex: '#0A66C2', name: 'LinkedIn Blue' }, { hex: '#007BFF', name: 'Primary Blue' }, { hex: '#28A745', name: 'Success Green' }, { hex: '#DC3545', name: 'Danger Red' }, { hex: '#FFC107', name: 'Warning Yellow', needsDarkText: true }, { hex: '#181717', name: 'GitHub Black' }, { hex: '#4A154B', name: 'Slack Purple' }, { hex: '#00457C', name: 'PayPal Blue' }, { hex: '#000000', name: 'Uber Black' }, { hex: '#F44336', name: 'Material Red' }, { hex: '#E91E63', name: 'Material Pink' }, { hex: '#FFCDD2', name: 'Material Red 100', needsDarkText: true }, { hex: '#F8BBD0', name: 'Material Pink 100', needsDarkText: true }, { hex: '#9C27B0', name: 'Material Purple' }, { hex: '#673AB7', name: 'Material Deep Purple' }, { hex: '#3F51B5', name: 'Material Indigo' }, { hex: '#7E57C2', name: 'Material Deep Purple 400' }, { hex: '#2196F3', name: 'Material Blue' }, { hex: '#03A9F4', name: 'Material Light Blue' }, { hex: '#00BCD4', name: 'Material Cyan' }, { hex: '#009688', name: 'Material Teal' }, { hex: '#90CAF9', name: 'Material Blue 200', needsDarkText: true }, { hex: '#4CAF50', name: 'Material Green' }, { hex: '#8BC34A', name: 'Material Light Green' }, { hex: '#CDDC39', name: 'Material Lime', needsDarkText: true }, { hex: '#AED581', name: 'Material Light Green 300', needsDarkText: true }, { hex: '#FFEB3B', name: 'Material Yellow', needsDarkText: true }, { hex: '#FFC107', name: 'Material Amber', needsDarkText: true }, { hex: '#FF9800', name: 'Material Orange' }, { hex: '#FF5722', name: 'Material Deep Orange' }, { hex: '#795548', name: 'Material Brown' }, { hex: '#9E9E9E', name: 'Material Grey' }, { hex: '#607D8B', name: 'Material Blue Grey' }, { hex: '#FFFFFF', name: 'White', needsDarkText: true }, { hex: '#333333', name: 'Dark Charcoal' }, { hex: '#F0F8FF', name: 'Alice Blue', needsDarkText: true }, { hex: '#FF6347', name: 'Tomato' }, { hex: '#FFD700', 'name': 'Gold', needsDarkText: true }, { hex: '#4682B4', name: 'Steel Blue' }, { hex: '#D2691E', name: 'Chocolate' }, { hex: '#20B2AA', name: 'Light Sea Green' }, { hex: '#C71585', name: 'Medium Violet Red' }, { hex: '#6A5ACD', name: 'Slate Blue' }];
 
         let container;
@@ -116,8 +112,7 @@
             if (!container) return;
             container.innerHTML = '';
 
-            const shuffledMasterList = [...masterColorsList].sort(() => 0.5 - Math.random());
-            const selectedColors = shuffledMasterList.slice(0, 18);
+            const selectedColors = masterColorsList.slice(0, 18);
             highestZIndex = selectedColors.length;
 
             const containerWidth = container.clientWidth;
@@ -134,30 +129,42 @@
                 colorInfo.innerHTML = `${colorItem.name}<br>${colorItem.hex}`;
                 swatch.appendChild(colorInfo);
 
-                // --- 物理堆叠定位算法 ---
-
-                // 1. 设定色块的尺寸
                 const smallerDim = Math.min(containerWidth, containerHeight);
-                const size = smallerDim * 0.2; // 固定一个相对优雅的尺寸
+                const size = smallerDim * 0.2;
                 swatch.style.width = `${size}px`;
                 swatch.style.height = `${size}px`;
 
-                // 2. 设定初始的、屏幕外的随机水平位置
                 swatch.style.left = `${Math.random() * (containerWidth - size)}px`;
 
-                // 3. 计算最终“落点”的随机变换效果
-                // 目标区域：屏幕中下部一个比色块稍大的区域
                 const targetX = (containerWidth / 2) + (Math.random() - 0.5) * (smallerDim * 0.4);
                 const targetY = (containerHeight / 2) + (Math.random() - 0.5) * (smallerDim * 0.3);
-                const rotation = (Math.random() - 0.5) * 30; // -15到+15度的随机旋转
-                const finalTransform = `translate3d(${targetX - size / 2}px, ${targetY}px, 0) rotate(${rotation}deg)`;
+                const rotation = (Math.random() - 0.5) * 30;
 
-                // 4. 设置初始层级
+                // **关键修正1：将最终的 transform 状态存储在元素上**
+                const restingTransform = `translate3d(${targetX - size / 2}px, ${targetY}px, 0) rotate(${rotation}deg)`;
+                swatch._restingTransform = restingTransform;
+
                 swatch.style.zIndex = index;
+
+                // **关键修正2：用 JS 事件处理悬停效果**
+                swatch.addEventListener('mouseenter', function () {
+                    this.style.transition = 'transform 0.25s ease-out'; // 使用更快的悬停动画
+                    this.style.transform = this._restingTransform + ' scale(1.08)';
+                    this.style.zIndex = highestZIndex + 1;
+                });
+
+                swatch.addEventListener('mouseleave', function () {
+                    this.style.transition = 'transform 0.25s ease-out';
+                    this.style.transform = this._restingTransform;
+                    // zIndex在点击后是永久提升的，所以离开时不恢复
+                    this.style.zIndex = this._clickedZIndex || index;
+                });
 
                 swatch.addEventListener('click', function () {
                     highestZIndex++;
                     this.style.zIndex = highestZIndex;
+                    this._clickedZIndex = highestZIndex; // 记录下点击后的zIndex
+
                     const hexToCopy = colorItem.hex;
                     if (navigator.clipboard) {
                         navigator.clipboard.writeText(hexToCopy).then(() => {
@@ -168,9 +175,10 @@
 
                 container.appendChild(swatch);
 
-                // 5. 错开时间，触发“掉落”动画
                 setTimeout(() => {
-                    swatch.style.transform = finalTransform;
+                    // 恢复长时动画，用于掉落
+                    swatch.style.transition = 'transform 1.2s cubic-bezier(0.2, 1, 0.3, 1), opacity 0.8s ease-in';
+                    swatch.style.transform = restingTransform;
                     swatch.classList.add('is-settled');
                 }, index * 100 + 50);
             });
