@@ -80,30 +80,32 @@
 <body>
     <div class="palette-container" id="paletteContainer"></div>
 
-    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-performance.js"></script>
-    <script>
+    <script type="module">
+        // 步骤1: 从 Firebase 的 CDN 导入所需的函数 (不再使用全局 firebase 对象)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+        import { getPerformance } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-performance.js";
+
+        // 步骤2: 您的 Firebase 项目配置 (保持不变)
         const firebaseConfig = { apiKey: "AIzaSyAE2SzXcfhMxf-ZeDtvWo0NVnPlzUo0T5s", authDomain: "e50914.firebaseapp.com", projectId: "e50914", storageBucket: "e50914.appspot.com", messagingSenderId: "942223279536", appId: "1:942223279536:web:27aa4c8a8a2b1528b68275", measurementId: "G-VBW6HEHRH4" };
+
+        // 步骤3: 初始化 Firebase (使用导入的函数)
         try {
-            const app = firebase.initializeApp(firebaseConfig);
-            const perf = firebase.performance(app);
-            console.log("Firebase Performance Monitoring initialized.");
+            const app = initializeApp(firebaseConfig);
+            const perf = getPerformance(app);
+            console.log("Firebase Performance Monitoring initialized using ESM.");
         } catch (e) {
             console.error("Failed to initialize Firebase:", e);
         }
-    </script>
 
-    <script>
+        // 步骤4: 您的应用主逻辑 (现在也包含在这个模块中)
         const masterColorsList = [{ hex: '#4285F4', name: 'Google Blue' }, { hex: '#DB4437', name: 'Google Red' }, { hex: '#F4B400', name: 'Google Yellow', needsDarkText: true }, { hex: '#0F9D58', name: 'Google Green' }, { hex: '#1877F2', name: 'Meta Blue' }, { hex: '#0078D4', name: 'Microsoft Blue' }, { hex: '#86868B', name: 'Apple Gray' }, { hex: '#FF9900', name: 'Amazon Orange', needsDarkText: true }, { hex: '#1DB954', name: 'Spotify Green' }, { hex: '#E50914', name: 'Netflix Red' }, { hex: '#1DA1F2', name: 'Twitter Blue' }, { hex: '#0A66C2', name: 'LinkedIn Blue' }, { hex: '#007BFF', name: 'Primary Blue' }, { hex: '#28A745', name: 'Success Green' }, { hex: '#DC3545', name: 'Danger Red' }, { hex: '#FFC107', name: 'Warning Yellow', needsDarkText: true }, { hex: '#181717', name: 'GitHub Black' }, { hex: '#4A154B', name: 'Slack Purple' }, { hex: '#00457C', name: 'PayPal Blue' }, { hex: '#000000', name: 'Uber Black' }, { hex: '#F44336', name: 'Material Red' }, { hex: '#E91E63', name: 'Material Pink' }, { hex: '#FFCDD2', name: 'Material Red 100', needsDarkText: true }, { hex: '#F8BBD0', name: 'Material Pink 100', needsDarkText: true }, { hex: '#9C27B0', name: 'Material Purple' }, { hex: '#673AB7', name: 'Material Deep Purple' }, { hex: '#3F51B5', name: 'Material Indigo' }, { hex: '#7E57C2', name: 'Material Deep Purple 400' }, { hex: '#2196F3', name: 'Material Blue' }, { hex: '#03A9F4', name: 'Material Light Blue' }, { hex: '#00BCD4', name: 'Material Cyan' }, { hex: '#009688', name: 'Material Teal' }, { hex: '#90CAF9', name: 'Material Blue 200', needsDarkText: true }, { hex: '#4CAF50', name: 'Material Green' }, { hex: '#8BC34A', name: 'Material Light Green' }, { hex: '#CDDC39', name: 'Material Lime', needsDarkText: true }, { hex: '#AED581', name: 'Material Light Green 300', needsDarkText: true }, { hex: '#FFEB3B', name: 'Material Yellow', needsDarkText: true }, { hex: '#FFC107', name: 'Material Amber', needsDarkText: true }, { hex: '#FF9800', name: 'Material Orange' }, { hex: '#FF5722', name: 'Material Deep Orange' }, { hex: '#795548', name: 'Material Brown' }, { hex: '#9E9E9E', name: 'Material Grey' }, { hex: '#607D8B', name: 'Material Blue Grey' }, { hex: '#FFFFFF', name: 'White', needsDarkText: true }, { hex: '#333333', name: 'Dark Charcoal' }, { hex: '#F0F8FF', name: 'Alice Blue', needsDarkText: true }, { hex: '#FF6347', name: 'Tomato' }, { hex: '#FFD700', 'name': 'Gold', needsDarkText: true }, { hex: '#4682B4', name: 'Steel Blue' }, { hex: '#D2691E', name: 'Chocolate' }, { hex: '#20B2AA', name: 'Light Sea Green' }, { hex: '#C71585', name: 'Medium Violet Red' }, { hex: '#6A5ACD', name: 'Slate Blue' }];
 
-        // --- 可轻松配置的常量 ---
-        const MIN_SWATCH_COUNT = 14; // 色块数量随机下限
-        const MAX_SWATCH_COUNT = 20; // 色块数量随机上限
+        const MIN_SWATCH_COUNT = 14;
+        const MAX_SWATCH_COUNT = 20;
 
         let container;
         let highestZIndex = 0;
 
-        // 辅助函数：生成指定范围内的随机整数
         function getRandomInt(min, max) {
             min = Math.ceil(min);
             max = Math.floor(max);
@@ -122,46 +124,35 @@
         function generateRandomSwatches() {
             if (!container) return;
             container.innerHTML = '';
-
-            // 在生成前，先决定本次的色块数量
             const swatchCount = getRandomInt(MIN_SWATCH_COUNT, MAX_SWATCH_COUNT);
-
             const shuffledMasterList = [...masterColorsList].sort(() => 0.5 - Math.random());
             const selectedColors = shuffledMasterList.slice(0, swatchCount);
             highestZIndex = selectedColors.length;
-
             const GRID_UNITS = 100;
             const containerWidth = container.clientWidth;
             const containerHeight = container.clientHeight;
             const oneCol = containerWidth / GRID_UNITS;
             const oneRow = containerHeight / GRID_UNITS;
-
             selectedColors.forEach((colorItem, index) => {
                 const swatch = document.createElement('div');
                 swatch.classList.add('color-swatch');
                 swatch.style.backgroundColor = colorItem.hex;
                 if (colorItem.needsDarkText) swatch.classList.add('text-dark');
-
                 const colorInfo = document.createElement('div');
                 colorInfo.classList.add('color-info');
                 colorInfo.innerHTML = `${colorItem.name}<br>${colorItem.hex}`;
                 swatch.appendChild(colorInfo);
-
                 const smallerDim = Math.min(containerWidth, containerHeight);
                 const minSize = smallerDim * 0.12;
                 const maxSize = smallerDim * 0.22;
                 const randomSize = Math.random() * (maxSize - minSize) + minSize;
-
                 const colSpan = Math.max(5, Math.round(randomSize / oneCol));
                 const rowSpan = Math.max(5, Math.round(randomSize / oneRow));
-
                 const colStart = Math.floor(Math.random() * (GRID_UNITS - colSpan + 1)) + 1;
                 const rowStart = Math.floor(Math.random() * (GRID_UNITS - rowSpan + 1)) + 1;
-
                 swatch.style.gridColumn = `${colStart} / span ${colSpan}`;
                 swatch.style.gridRow = `${rowStart} / span ${rowSpan}`;
                 swatch.style.zIndex = index;
-
                 swatch.addEventListener('click', function () {
                     highestZIndex++;
                     this.style.zIndex = highestZIndex;
@@ -174,7 +165,6 @@
                         });
                     }
                 });
-
                 container.appendChild(swatch);
                 setTimeout(() => { swatch.style.opacity = '1'; }, index * 35 + 50);
             });
@@ -188,6 +178,7 @@
             }
         });
     </script>
+
 </body>
 
 </html>
