@@ -10,6 +10,10 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # 之前您工作流中的 permissions 部分，如果还需要预览部署功能，记得加回来
+    # permissions:
+    #   contents: read
+    #   pull-requests: write 
 
     steps:
       - name: Checkout code
@@ -18,20 +22,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22 
-          cache: 'pnpm' # 这个缓存是为pnpm的全局存储，而不是pnpm本身
+          node-version: 22
+          cache: 'pnpm'
 
-      # 移除以下两步:
-      # - name: Enable corepack
-      #   run: corepack enable
-      # - name: Prepare and activate pnpm
-      #   run: corepack prepare pnpm@8 --activate
-
-      # 重新添加 pnpm/action-setup 步骤:
       - name: Setup pnpm
-        uses: pnpm/action-setup@v3 # 您可以使用 v3 或查找是否有更新的 v4 版本
+        uses: pnpm/action-setup@v4.0.0  # <--- 修改这里，从 @v3 更新到 @v4.0.0 (或 @v4)
         with:
-          version: 8 # 指定您希望使用的 pnpm 版本
+          version: 8
 
       - name: Install dependencies
         run: pnpm install
@@ -45,4 +42,6 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_E50914 }}
           projectId: e50914
-          channelId: live
+          # 如果您之前的channelId逻辑是根据PR和main分支动态的，可以改回去
+          # channelId: ${{ github.event_name == 'pull_request' && format('pr-{0}-7d', github.event.number) || 'live' }}
+          channelId: live # 当前是固定 live
