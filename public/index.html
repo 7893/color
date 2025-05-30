@@ -15,6 +15,7 @@
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             background-color: #1C1C1E;
+            color: #EAEAEA;
             -webkit-font-smoothing: antialiased;
         }
 
@@ -32,22 +33,12 @@
             box-sizing: border-box;
             border-radius: 12px;
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
-            align-items: center;
-            padding: 10px;
-            text-align: center;
             cursor: pointer;
             will-change: transform, opacity, box-shadow;
-
+            backface-visibility: hidden;
+            transition: transform 1.2s cubic-bezier(0.2, 1, 0.3, 1), opacity 0.8s ease-in, box-shadow 0.25s ease-out;
             opacity: 0;
             transform: translateY(-150%) rotateX(45deg) scale(1.1);
-
-            /* 修正2: 增加这个属性可以有效抗锯齿，使边缘更平滑 */
-            backface-visibility: hidden;
-
-            transition: transform 1.2s cubic-bezier(0.2, 1, 0.3, 1), opacity 0.8s ease-in, box-shadow 0.25s ease-out;
         }
 
         .color-swatch.is-settled {
@@ -58,27 +49,38 @@
             box-shadow: 0 12px 25px rgba(0, 0, 0, 0.5);
         }
 
-        .color-info {
-            background-color: rgba(0, 0, 0, 0.25);
-            color: #EAEAEA;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+        /* 全局颜色信息展示区 */
+        .color-display {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translate(-50%, 10px);
+            background-color: rgba(44, 44, 46, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 1rem;
             font-weight: 500;
-            line-height: 1.3;
-            width: 95%;
-            word-break: break-all;
+            text-align: center;
+            line-height: 1.4;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            /* 让鼠标可以穿透它 */
+            transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1), opacity 0.4s ease-out;
         }
 
-        .color-swatch.text-dark .color-info {
-            color: #121212;
-            background-color: rgba(255, 255, 255, 0.4);
+        .color-display.is-visible {
+            opacity: 1;
+            transform: translate(-50%, 0);
         }
     </style>
 </head>
 
 <body>
     <div class="palette-container" id="paletteContainer"></div>
+    <div class="color-display" id="colorDisplay"></div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
@@ -92,11 +94,12 @@
             console.error("Failed to initialize Firebase:", e);
         }
 
-        // 应用主逻辑 (v5.2 - 终极打磨版)
-        const masterColorsList = [{ hex: '#4285F4', name: 'Google Blue' }, { hex: '#DB4437', name: 'Google Red' }, { hex: '#F4B400', name: 'Google Yellow', needsDarkText: true }, { hex: '#0F9D58', name: 'Google Green' }, { hex: '#1877F2', name: 'Meta Blue' }, { hex: '#0078D4', name: 'Microsoft Blue' }, { hex: '#86868B', name: 'Apple Gray' }, { hex: '#FF9900', name: 'Amazon Orange', needsDarkText: true }, { hex: '#1DB954', name: 'Spotify Green' }, { hex: '#E50914', name: 'Netflix Red' }, { hex: '#1DA1F2', name: 'Twitter Blue' }, { hex: '#0A66C2', name: 'LinkedIn Blue' }, { hex: '#007BFF', name: 'Primary Blue' }, { hex: '#28A745', name: 'Success Green' }, { hex: '#DC3545', name: 'Danger Red' }, { hex: '#FFC107', name: 'Warning Yellow', needsDarkText: true }, { hex: '#181717', name: 'GitHub Black' }, { hex: '#4A154B', name: 'Slack Purple' }, { hex: '#00457C', name: 'PayPal Blue' }, { hex: '#000000', name: 'Uber Black' }, { hex: '#F44336', name: 'Material Red' }, { hex: '#E91E63', name: 'Material Pink' }, { hex: '#FFCDD2', name: 'Material Red 100', needsDarkText: true }, { hex: '#F8BBD0', name: 'Material Pink 100', needsDarkText: true }, { hex: '#9C27B0', name: 'Material Purple' }, { hex: '#673AB7', name: 'Material Deep Purple' }, { hex: '#3F51B5', name: 'Material Indigo' }, { hex: '#7E57C2', name: 'Material Deep Purple 400' }, { hex: '#2196F3', name: 'Material Blue' }, { hex: '#03A9F4', name: 'Material Light Blue' }, { hex: '#00BCD4', name: 'Material Cyan' }, { hex: '#009688', name: 'Material Teal' }, { hex: '#90CAF9', name: 'Material Blue 200', needsDarkText: true }, { hex: '#4CAF50', name: 'Material Green' }, { hex: '#8BC34A', name: 'Material Light Green' }, { hex: '#CDDC39', name: 'Material Lime', needsDarkText: true }, { hex: '#AED581', name: 'Material Light Green 300', needsDarkText: true }, { hex: '#FFEB3B', name: 'Material Yellow', needsDarkText: true }, { hex: '#FFC107', name: 'Material Amber', needsDarkText: true }, { hex: '#FF9800', name: 'Material Orange' }, { hex: '#FF5722', name: 'Material Deep Orange' }, { hex: '#795548', name: 'Material Brown' }, { hex: '#9E9E9E', name: 'Material Grey' }, { hex: '#607D8B', name: 'Material Blue Grey' }, { hex: '#FFFFFF', name: 'White', needsDarkText: true }, { hex: '#333333', name: 'Dark Charcoal' }, { hex: '#F0F8FF', name: 'Alice Blue', needsDarkText: true }, { hex: '#FF6347', name: 'Tomato' }, { hex: '#FFD700', 'name': 'Gold', needsDarkText: true }, { hex: '#4682B4', name: 'Steel Blue' }, { hex: '#D2691E', name: 'Chocolate' }, { hex: '#20B2AA', name: 'Light Sea Green' }, { hex: '#C71585', name: 'Medium Violet Red' }, { hex: '#6A5ACD', name: 'Slate Blue' }];
+        // 应用主逻辑 (v6.0 - 极简主义版)
+        const masterColorsList = [{ hex: '#4285F4', name: 'Google Blue' }, { hex: '#DB4437', name: 'Google Red' }, { hex: '#F4B400', name: 'Google Yellow' }, { hex: '#0F9D58', name: 'Google Green' }, { hex: '#1877F2', name: 'Meta Blue' }, { hex: '#0078D4', name: 'Microsoft Blue' }, { hex: '#86868B', name: 'Apple Gray' }, { hex: '#FF9900', name: 'Amazon Orange' }, { hex: '#1DB954', name: 'Spotify Green' }, { hex: '#E50914', name: 'Netflix Red' }, { hex: '#1DA1F2', name: 'Twitter Blue' }, { hex: '#0A66C2', name: 'LinkedIn Blue' }, { hex: '#007BFF', name: 'Primary Blue' }, { hex: '#28A745', name: 'Success Green' }, { hex: '#DC3545', name: 'Danger Red' }, { hex: '#FFC107', name: 'Warning Yellow' }, { hex: '#181717', name: 'GitHub Black' }, { hex: '#4A154B', name: 'Slack Purple' }, { hex: '#00457C', name: 'PayPal Blue' }, { hex: '#000000', name: 'Uber Black' }, { hex: '#F44336', name: 'Material Red' }, { hex: '#E91E63', name: 'Material Pink' }, { hex: '#FFCDD2', name: 'Material Red 100' }, { hex: '#F8BBD0', name: 'Material Pink 100' }, { hex: '#9C27B0', name: 'Material Purple' }, { hex: '#673AB7', name: 'Material Deep Purple' }, { hex: '#3F51B5', name: 'Material Indigo' }, { hex: '#7E57C2', name: 'Material Deep Purple 400' }, { hex: '#2196F3', name: 'Material Blue' }, { hex: '#03A9F4', name: 'Material Light Blue' }, { hex: '#00BCD4', name: 'Material Cyan' }, { hex: '#009688', name: 'Material Teal' }, { hex: '#90CAF9', name: 'Material Blue 200' }, { hex: '#4CAF50', name: 'Material Green' }, { hex: '#8BC34A', name: 'Material Light Green' }, { hex: '#CDDC39', name: 'Material Lime' }, { hex: '#AED581', name: 'Material Light Green 300' }, { hex: '#FFEB3B', name: 'Material Yellow' }, { hex: '#FFC107', name: 'Material Amber' }, { hex: '#FF9800', name: 'Material Orange' }, { hex: '#FF5722', name: 'Material Deep Orange' }, { hex: '#795548', name: 'Material Brown' }, { hex: '#9E9E9E', name: 'Material Grey' }, { hex: '#607D8B', name: 'Material Blue Grey' }, { hex: '#FFFFFF', name: 'White' }, { hex: '#333333', name: 'Dark Charcoal' }, { hex: '#F0F8FF', name: 'Alice Blue' }, { hex: '#FF6347', name: 'Tomato' }, { hex: '#FFD700', 'name': 'Gold' }, { hex: '#4682B4', name: 'Steel Blue' }, { hex: '#D2691E', name: 'Chocolate' }, { hex: '#20B2AA', name: 'Light Sea Green' }, { hex: '#C71585', name: 'Medium Violet Red' }, { hex: '#6A5ACD', name: 'Slate Blue' }];
 
-        let container;
+        let container, colorDisplay;
         let highestZIndex = 0;
+        let displayTimeout;
 
         function debounce(func, wait) {
             let timeout;
@@ -107,22 +110,28 @@
             };
         }
 
-        // --- 新的辅助函数，用于重新计算和应用色块的位置 ---
+        function showColorInfo(colorItem) {
+            clearTimeout(displayTimeout); // 清除上一个计时器
+            colorDisplay.innerHTML = `${colorItem.name}<br>${colorItem.hex}`;
+            colorDisplay.classList.add('is-visible');
+
+            // 3秒后自动消失
+            displayTimeout = setTimeout(() => {
+                colorDisplay.classList.remove('is-visible');
+            }, 3000);
+        }
+
         function repositionSwatch(swatch, isAnimated = false) {
             const containerWidth = container.clientWidth;
             const containerHeight = container.clientHeight;
             const size = parseFloat(swatch.style.width);
             const padding = size * 0.2;
-
             const targetX = padding + Math.random() * (containerWidth - size - padding * 2);
             const targetY = padding + Math.random() * (containerHeight - size - padding * 2);
             const rotation = (Math.random() - 0.5) * 40;
-
             const newTransform = `translate3d(${targetX}px, ${targetY}px, 0) rotate(${rotation}deg)`;
             swatch._restingTransform = newTransform;
-
             if (isAnimated) {
-                // 赋予一个短暂、快速的重新定位动画
                 swatch.style.transition = 'transform 0.4s cubic-bezier(0.5, 0, 0.5, 1)';
             }
             swatch.style.transform = newTransform;
@@ -131,12 +140,9 @@
         function generateRandomSwatches() {
             if (!container) return;
             container.innerHTML = '';
-
-            // 修正3：在选取颜色前，先随机打乱整个列表
             const shuffledMasterList = [...masterColorsList].sort(() => 0.5 - Math.random());
             const selectedColors = shuffledMasterList.slice(0, 18);
             highestZIndex = selectedColors.length;
-
             const containerWidth = container.clientWidth;
             const containerHeight = container.clientHeight;
             const smallerDim = Math.min(containerWidth, containerHeight);
@@ -146,56 +152,41 @@
                 const swatch = document.createElement('div');
                 swatch.classList.add('color-swatch');
                 swatch.style.backgroundColor = colorItem.hex;
-                if (colorItem.needsDarkText) swatch.classList.add('text-dark');
 
-                const colorInfo = document.createElement('div');
-                colorInfo.classList.add('color-info');
-                colorInfo.innerHTML = `${colorItem.name}<br>${colorItem.hex}`;
-                swatch.appendChild(colorInfo);
-
-                swatch.style.width = `${size}px`;
-                swatch.style.height = `${size}px`;
-
-                // 生成初始随机位置
                 repositionSwatch(swatch, false);
-
                 swatch._restingZIndex = index;
                 swatch.style.zIndex = swatch._restingZIndex;
+                swatch.style.width = `${size}px`;
+                swatch.style.height = `${size}px`;
 
                 swatch.addEventListener('mouseenter', function () {
                     this.style.transition = 'transform 0.25s ease-out';
                     this.style.transform = this._restingTransform + ' scale(1.1)';
                     this.style.zIndex = 999;
                 });
-
                 swatch.addEventListener('mouseleave', function () {
                     this.style.transition = 'transform 0.25s ease-out';
                     this.style.transform = this._restingTransform;
                     this.style.zIndex = this._restingZIndex;
                 });
-
                 swatch.addEventListener('click', function () {
                     highestZIndex++;
                     this._restingZIndex = highestZIndex;
                     this.style.zIndex = this._restingZIndex;
-
-                    // 修正1：为点击增加视觉反馈
                     const liftingTransform = this._restingTransform.replace(/rotate\([^)]+\)/, 'rotate(0deg)') + ' scale(1.15)';
                     this.style.transition = 'transform 0.2s ease-out';
                     this.style.transform = liftingTransform;
+                    setTimeout(() => { repositionSwatch(this, true); }, 200);
 
-                    // 短暂延迟后，让它落到新的位置
-                    setTimeout(() => {
-                        repositionSwatch(this, true);
-                    }, 200);
-
-                    const hexToCopy = colorItem.hex;
-                    if (navigator.clipboard) {
-                        navigator.clipboard.writeText(hexToCopy);
-                    }
+                    if (navigator.clipboard) navigator.clipboard.writeText(colorItem.hex);
+                    showColorInfo(colorItem); // 显示颜色信息
                 });
 
                 container.appendChild(swatch);
+
+                const initialRotation = (Math.random() - 0.5) * 90;
+                const initialX = Math.random() * containerWidth;
+                swatch.style.transform = `translate3d(${initialX}px, -200px, 0) rotate(${initialRotation}deg)`;
 
                 setTimeout(() => {
                     swatch.style.transition = 'transform 1.2s cubic-bezier(0.2, 1, 0.3, 1), opacity 0.8s ease-in';
@@ -207,6 +198,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             container = document.getElementById('paletteContainer');
+            colorDisplay = document.getElementById('colorDisplay');
             if (container) {
                 generateRandomSwatches();
                 window.addEventListener('resize', debounce(generateRandomSwatches, 250));
