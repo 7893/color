@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: Deploy to Firebase Hosting
 
 on:
   push:
@@ -7,28 +7,28 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # ✅ 推荐使用长期支持的明确版本，避免 ubuntu-latest 的潜在变动
 
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22.16.0
-          cache: npm
+          node-version: 22        # ✅ 指定主版本，自动获取最新 patch（例如 22.16.0）
+          cache: npm              # ✅ 如果你使用 npm 构建，可加快缓存速度
 
       - name: Install dependencies
-        run: npm install
+        run: npm install          # ✅ 可替代 pnpm；避免额外安装 pnpm 的步骤
 
-      - name: Build
-        run: npm run build
+      - name: Build project
+        run: npm run build        # ✅ 确保 package.json 中有 build 脚本（如果你项目需要）
 
-      - name: Deploy to Firebase Hosting
+      - name: Deploy to Firebase
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_E50914 }}
-          projectId: e50914
           channelId: live
+          projectId: e50914       # ❗请根据你的 Firebase 项目 ID 替换这个值
