@@ -18,12 +18,10 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* --- 更精细的 "隐形网格" 容器 --- */
         .palette-container {
             display: grid;
             width: 100%;
             height: 100%;
-            /* 创建一个 100x100 的超精细网格，用于精确控制 */
             grid-template-columns: repeat(100, 1fr);
             grid-template-rows: repeat(100, 1fr);
         }
@@ -98,8 +96,19 @@
     <script>
         const masterColorsList = [{ hex: '#4285F4', name: 'Google Blue' }, { hex: '#DB4437', name: 'Google Red' }, { hex: '#F4B400', name: 'Google Yellow', needsDarkText: true }, { hex: '#0F9D58', name: 'Google Green' }, { hex: '#1877F2', name: 'Meta Blue' }, { hex: '#0078D4', name: 'Microsoft Blue' }, { hex: '#86868B', name: 'Apple Gray' }, { hex: '#FF9900', name: 'Amazon Orange', needsDarkText: true }, { hex: '#1DB954', name: 'Spotify Green' }, { hex: '#E50914', name: 'Netflix Red' }, { hex: '#1DA1F2', name: 'Twitter Blue' }, { hex: '#0A66C2', name: 'LinkedIn Blue' }, { hex: '#007BFF', name: 'Primary Blue' }, { hex: '#28A745', name: 'Success Green' }, { hex: '#DC3545', name: 'Danger Red' }, { hex: '#FFC107', name: 'Warning Yellow', needsDarkText: true }, { hex: '#181717', name: 'GitHub Black' }, { hex: '#4A154B', name: 'Slack Purple' }, { hex: '#00457C', name: 'PayPal Blue' }, { hex: '#000000', name: 'Uber Black' }, { hex: '#F44336', name: 'Material Red' }, { hex: '#E91E63', name: 'Material Pink' }, { hex: '#FFCDD2', name: 'Material Red 100', needsDarkText: true }, { hex: '#F8BBD0', name: 'Material Pink 100', needsDarkText: true }, { hex: '#9C27B0', name: 'Material Purple' }, { hex: '#673AB7', name: 'Material Deep Purple' }, { hex: '#3F51B5', name: 'Material Indigo' }, { hex: '#7E57C2', name: 'Material Deep Purple 400' }, { hex: '#2196F3', name: 'Material Blue' }, { hex: '#03A9F4', name: 'Material Light Blue' }, { hex: '#00BCD4', name: 'Material Cyan' }, { hex: '#009688', name: 'Material Teal' }, { hex: '#90CAF9', name: 'Material Blue 200', needsDarkText: true }, { hex: '#4CAF50', name: 'Material Green' }, { hex: '#8BC34A', name: 'Material Light Green' }, { hex: '#CDDC39', name: 'Material Lime', needsDarkText: true }, { hex: '#AED581', name: 'Material Light Green 300', needsDarkText: true }, { hex: '#FFEB3B', name: 'Material Yellow', needsDarkText: true }, { hex: '#FFC107', name: 'Material Amber', needsDarkText: true }, { hex: '#FF9800', name: 'Material Orange' }, { hex: '#FF5722', name: 'Material Deep Orange' }, { hex: '#795548', name: 'Material Brown' }, { hex: '#9E9E9E', name: 'Material Grey' }, { hex: '#607D8B', name: 'Material Blue Grey' }, { hex: '#FFFFFF', name: 'White', needsDarkText: true }, { hex: '#333333', name: 'Dark Charcoal' }, { hex: '#F0F8FF', name: 'Alice Blue', needsDarkText: true }, { hex: '#FF6347', name: 'Tomato' }, { hex: '#FFD700', 'name': 'Gold', needsDarkText: true }, { hex: '#4682B4', name: 'Steel Blue' }, { hex: '#D2691E', name: 'Chocolate' }, { hex: '#20B2AA', name: 'Light Sea Green' }, { hex: '#C71585', name: 'Medium Violet Red' }, { hex: '#6A5ACD', name: 'Slate Blue' }];
 
+        // --- 可轻松配置的常量 ---
+        const MIN_SWATCH_COUNT = 14; // 色块数量随机下限
+        const MAX_SWATCH_COUNT = 20; // 色块数量随机上限
+
         let container;
         let highestZIndex = 0;
+
+        // 辅助函数：生成指定范围内的随机整数
+        function getRandomInt(min, max) {
+            min = Math.ceil(min);
+            max = Math.floor(max);
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
 
         function debounce(func, wait) {
             let timeout;
@@ -114,11 +123,14 @@
             if (!container) return;
             container.innerHTML = '';
 
+            // 在生成前，先决定本次的色块数量
+            const swatchCount = getRandomInt(MIN_SWATCH_COUNT, MAX_SWATCH_COUNT);
+
             const shuffledMasterList = [...masterColorsList].sort(() => 0.5 - Math.random());
-            const selectedColors = shuffledMasterList.slice(0, 25); // 可以稍微多放几个
+            const selectedColors = shuffledMasterList.slice(0, swatchCount);
             highestZIndex = selectedColors.length;
 
-            const GRID_UNITS = 100; // 与CSS中的 repeat(100, 1fr) 对应
+            const GRID_UNITS = 100;
             const containerWidth = container.clientWidth;
             const containerHeight = container.clientHeight;
             const oneCol = containerWidth / GRID_UNITS;
@@ -135,22 +147,17 @@
                 colorInfo.innerHTML = `${colorItem.name}<br>${colorItem.hex}`;
                 swatch.appendChild(colorInfo);
 
-                // --- 优雅的尺寸和定位算法 ---
-                // 1. 复刻老版本的尺寸算法，基于屏幕较小边的百分比
                 const smallerDim = Math.min(containerWidth, containerHeight);
-                const minSize = smallerDim * 0.12; // 尺寸范围可以微调
+                const minSize = smallerDim * 0.12;
                 const maxSize = smallerDim * 0.22;
                 const randomSize = Math.random() * (maxSize - minSize) + minSize;
 
-                // 2. 将计算出的像素尺寸，反向转换为需要占据的网格单元(span)数量
                 const colSpan = Math.max(5, Math.round(randomSize / oneCol));
                 const rowSpan = Math.max(5, Math.round(randomSize / oneRow));
 
-                // 3. 随机决定起始位置，并确保不超出边界
                 const colStart = Math.floor(Math.random() * (GRID_UNITS - colSpan + 1)) + 1;
                 const rowStart = Math.floor(Math.random() * (GRID_UNITS - rowSpan + 1)) + 1;
 
-                // 4. 应用样式
                 swatch.style.gridColumn = `${colStart} / span ${colSpan}`;
                 swatch.style.gridRow = `${rowStart} / span ${rowSpan}`;
                 swatch.style.zIndex = index;
