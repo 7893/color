@@ -1,3 +1,5 @@
+# .github/workflows/deploy.yml
+
 name: Build and Deploy
 
 on:
@@ -16,14 +18,20 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22 # 你也可以写 22.15.0，没有问题
-          cache: 'pnpm'
+          node-version: 22 
+          cache: 'pnpm' # 这个缓存是为pnpm的全局存储，而不是pnpm本身
 
-      - name: Enable corepack
-        run: corepack enable
+      # 移除以下两步:
+      # - name: Enable corepack
+      #   run: corepack enable
+      # - name: Prepare and activate pnpm
+      #   run: corepack prepare pnpm@8 --activate
 
-      - name: Prepare and activate pnpm
-        run: corepack prepare pnpm@8 --activate
+      # 重新添加 pnpm/action-setup 步骤:
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3 # 您可以使用 v3 或查找是否有更新的 v4 版本
+        with:
+          version: 8 # 指定您希望使用的 pnpm 版本
 
       - name: Install dependencies
         run: pnpm install
