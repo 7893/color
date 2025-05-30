@@ -18,19 +18,17 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* --- "隐形网格" 容器 --- */
+        /* --- 更精细的 "隐形网格" 容器 --- */
         .palette-container {
             display: grid;
             width: 100%;
             height: 100%;
-            /* 创建一个 20x20 的精细网格作为布局画布 */
-            grid-template-columns: repeat(20, 1fr);
-            grid-template-rows: repeat(20, 1fr);
+            /* 创建一个 100x100 的超精细网格，用于精确控制 */
+            grid-template-columns: repeat(100, 1fr);
+            grid-template-rows: repeat(100, 1fr);
         }
 
-        /* --- 色块作为网格项 --- */
         .color-swatch {
-            /* 不再需要 position: absolute */
             box-sizing: border-box;
             border-radius: 12px;
             box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
@@ -45,13 +43,11 @@
             cursor: pointer;
             opacity: 0;
             will-change: transform, opacity, z-index;
-            /* 通过JS来控制它在网格上的位置和大小 */
         }
 
         .color-swatch:hover {
             transform: scale(1.05);
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
-            /* 鼠标悬停时，提高层级以确保在最前 */
             z-index: 100 !important;
         }
 
@@ -100,7 +96,7 @@
     </script>
 
     <script>
-        const masterColorsList = [{ hex: '#4285F4', name: 'Google Blue' }, { hex: '#DB4437', name: 'Google Red' }, { hex: '#F4B400', name: 'Google Yellow', needsDarkText: true }, { hex: '#0F9D58', name: 'Google Green' }, { hex: '#1877F2', name: 'Meta Blue' }, { hex: '#0078D4', name: 'Microsoft Blue' }, { hex: '#86868B', name: 'Apple Gray' }, { hex: '#FF9900', name: 'Amazon Orange', needsDarkText: true }, { hex: '#1DB954', name: 'Spotify Green' }, { hex: '#E50914', name: 'Netflix Red' }, { hex: '#1DA1F2', name: 'Twitter Blue' }, { hex: '#0A66C2', name: 'LinkedIn Blue' }, { hex: '#007BFF', name: 'Primary Blue' }, { hex: '#28A745', name: 'Success Green' }, { hex: '#DC3545', name: 'Danger Red' }, { hex: '#FFC107', name: 'Warning Yellow', needsDarkText: true }, { hex: '#181717', name: 'GitHub Black' }, { hex: '#4A154B', name: 'Slack Purple' }, { hex: '#00457C', name: 'PayPal Blue' }, { hex: '#000000', name: 'Uber Black' }, { hex: '#F44336', name: 'Material Red' }, { hex: '#E91E63', name: 'Material Pink' }, { hex: '#FFCDD2', name: 'Material Red 100', needsDarkText: true }, { hex: '#F8BBD0', name: 'Material Pink 100', needsDarkText: true }, { hex: '#9C27B0', name: 'Material Purple' }, { hex: '#673AB7', name: 'Material Deep Purple' }, { hex: '#3F51B5', name: 'Material Indigo' }, { hex: '#7E57C2', name: 'Material Deep Purple 400' }, { hex: '#2196F3', name: 'Material Blue' }, { hex: '#03A9F4', name: 'Material Light Blue' }, { hex: '#00BCD4', name: 'Material Cyan' }, { hex: '#009688', name: 'Material Teal' }, { hex: '#90CAF9', name: 'Material Blue 200', needsDarkText: true }, { hex: '#4CAF50', name: 'Material Green' }, { hex: '#8BC34A', name: 'Material Light Green' }, { hex: '#CDDC39', name: 'Material Lime', needsDarkText: true }, { hex: '#AED581', name: 'Material Light Green 300', needsDarkText: true }, { hex: '#FFEB3B', name: 'Material Yellow', needsDarkText: true }, { hex: '#FFC107', name: 'Material Amber', needsDarkText: true }, { hex: '#FF9800', name: 'Material Orange' }, { hex: '#FF5722', name: 'Material Deep Orange' }, { hex: '#795548', name: 'Material Brown' }, { hex: '#9E9E9E', name: 'Material Grey' }, { hex: '#607D8B', name: 'Material Blue Grey' }, { hex: '#FFFFFF', name: 'White', needsDarkText: true }, { hex: '#333333', name: 'Dark Charcoal' }, { hex: '#F0F8FF', name: 'Alice Blue', needsDarkText: true }, { hex: '#FF6347', name: 'Tomato' }, { hex: '#FFD700', name: 'Gold', needsDarkText: true }, { hex: '#4682B4', name: 'Steel Blue' }, { hex: '#D2691E', name: 'Chocolate' }, { hex: '#20B2AA', name: 'Light Sea Green' }, { hex: '#C71585', name: 'Medium Violet Red' }, { hex: '#6A5ACD', name: 'Slate Blue' }];
+        const masterColorsList = [{ hex: '#4285F4', name: 'Google Blue' }, { hex: '#DB4437', name: 'Google Red' }, { hex: '#F4B400', name: 'Google Yellow', needsDarkText: true }, { hex: '#0F9D58', name: 'Google Green' }, { hex: '#1877F2', name: 'Meta Blue' }, { hex: '#0078D4', name: 'Microsoft Blue' }, { hex: '#86868B', name: 'Apple Gray' }, { hex: '#FF9900', name: 'Amazon Orange', needsDarkText: true }, { hex: '#1DB954', name: 'Spotify Green' }, { hex: '#E50914', name: 'Netflix Red' }, { hex: '#1DA1F2', name: 'Twitter Blue' }, { hex: '#0A66C2', name: 'LinkedIn Blue' }, { hex: '#007BFF', name: 'Primary Blue' }, { hex: '#28A745', name: 'Success Green' }, { hex: '#DC3545', name: 'Danger Red' }, { hex: '#FFC107', name: 'Warning Yellow', needsDarkText: true }, { hex: '#181717', name: 'GitHub Black' }, { hex: '#4A154B', name: 'Slack Purple' }, { hex: '#00457C', name: 'PayPal Blue' }, { hex: '#000000', name: 'Uber Black' }, { hex: '#F44336', name: 'Material Red' }, { hex: '#E91E63', name: 'Material Pink' }, { hex: '#FFCDD2', name: 'Material Red 100', needsDarkText: true }, { hex: '#F8BBD0', name: 'Material Pink 100', needsDarkText: true }, { hex: '#9C27B0', name: 'Material Purple' }, { hex: '#673AB7', name: 'Material Deep Purple' }, { hex: '#3F51B5', name: 'Material Indigo' }, { hex: '#7E57C2', name: 'Material Deep Purple 400' }, { hex: '#2196F3', name: 'Material Blue' }, { hex: '#03A9F4', name: 'Material Light Blue' }, { hex: '#00BCD4', name: 'Material Cyan' }, { hex: '#009688', name: 'Material Teal' }, { hex: '#90CAF9', name: 'Material Blue 200', needsDarkText: true }, { hex: '#4CAF50', name: 'Material Green' }, { hex: '#8BC34A', name: 'Material Light Green' }, { hex: '#CDDC39', name: 'Material Lime', needsDarkText: true }, { hex: '#AED581', name: 'Material Light Green 300', needsDarkText: true }, { hex: '#FFEB3B', name: 'Material Yellow', needsDarkText: true }, { hex: '#FFC107', name: 'Material Amber', needsDarkText: true }, { hex: '#FF9800', name: 'Material Orange' }, { hex: '#FF5722', name: 'Material Deep Orange' }, { hex: '#795548', name: 'Material Brown' }, { hex: '#9E9E9E', name: 'Material Grey' }, { hex: '#607D8B', name: 'Material Blue Grey' }, { hex: '#FFFFFF', name: 'White', needsDarkText: true }, { hex: '#333333', name: 'Dark Charcoal' }, { hex: '#F0F8FF', name: 'Alice Blue', needsDarkText: true }, { hex: '#FF6347', name: 'Tomato' }, { hex: '#FFD700', 'name': 'Gold', needsDarkText: true }, { hex: '#4682B4', name: 'Steel Blue' }, { hex: '#D2691E', name: 'Chocolate' }, { hex: '#20B2AA', name: 'Light Sea Green' }, { hex: '#C71585', name: 'Medium Violet Red' }, { hex: '#6A5ACD', name: 'Slate Blue' }];
 
         let container;
         let highestZIndex = 0;
@@ -108,10 +104,7 @@
         function debounce(func, wait) {
             let timeout;
             return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
+                const later = () => { clearTimeout(timeout); func(...args); };
                 clearTimeout(timeout);
                 timeout = setTimeout(later, wait);
             };
@@ -122,47 +115,49 @@
             container.innerHTML = '';
 
             const shuffledMasterList = [...masterColorsList].sort(() => 0.5 - Math.random());
-            const selectedColors = shuffledMasterList.slice(0, 20);
+            const selectedColors = shuffledMasterList.slice(0, 25); // 可以稍微多放几个
             highestZIndex = selectedColors.length;
 
-            // 定义网格大小，与CSS中的 repeat(20, 1fr) 对应
-            const GRID_SIZE = 20;
+            const GRID_UNITS = 100; // 与CSS中的 repeat(100, 1fr) 对应
+            const containerWidth = container.clientWidth;
+            const containerHeight = container.clientHeight;
+            const oneCol = containerWidth / GRID_UNITS;
+            const oneRow = containerHeight / GRID_UNITS;
 
             selectedColors.forEach((colorItem, index) => {
                 const swatch = document.createElement('div');
                 swatch.classList.add('color-swatch');
                 swatch.style.backgroundColor = colorItem.hex;
-                if (colorItem.needsDarkText) {
-                    swatch.classList.add('text-dark');
-                }
+                if (colorItem.needsDarkText) swatch.classList.add('text-dark');
 
                 const colorInfo = document.createElement('div');
                 colorInfo.classList.add('color-info');
                 colorInfo.innerHTML = `${colorItem.name}<br>${colorItem.hex}`;
                 swatch.appendChild(colorInfo);
 
-                // --- 基于"隐形网格"的随机定位和定大小算法 ---
+                // --- 优雅的尺寸和定位算法 ---
+                // 1. 复刻老版本的尺寸算法，基于屏幕较小边的百分比
+                const smallerDim = Math.min(containerWidth, containerHeight);
+                const minSize = smallerDim * 0.12; // 尺寸范围可以微调
+                const maxSize = smallerDim * 0.22;
+                const randomSize = Math.random() * (maxSize - minSize) + minSize;
 
-                // 1. 随机决定色块的尺寸（跨越几行几列）
-                const colSpan = Math.floor(Math.random() * 4) + 4; // 随机跨 4-7 列
-                const rowSpan = Math.floor(Math.random() * 4) + 4; // 随机跨 4-7 行
+                // 2. 将计算出的像素尺寸，反向转换为需要占据的网格单元(span)数量
+                const colSpan = Math.max(5, Math.round(randomSize / oneCol));
+                const rowSpan = Math.max(5, Math.round(randomSize / oneRow));
 
-                // 2. 随机决定色块的起始位置，并确保它不会超出网格边界
-                const colStart = Math.floor(Math.random() * (GRID_SIZE - colSpan + 1)) + 1;
-                const rowStart = Math.floor(Math.random() * (GRID_SIZE - rowSpan + 1)) + 1;
+                // 3. 随机决定起始位置，并确保不超出边界
+                const colStart = Math.floor(Math.random() * (GRID_UNITS - colSpan + 1)) + 1;
+                const rowStart = Math.floor(Math.random() * (GRID_UNITS - rowSpan + 1)) + 1;
 
-                // 3. 将计算出的位置和大小应用到 style
+                // 4. 应用样式
                 swatch.style.gridColumn = `${colStart} / span ${colSpan}`;
                 swatch.style.gridRow = `${rowStart} / span ${rowSpan}`;
-
-                // 4. 设置初始的层叠顺序，以产生重叠效果
                 swatch.style.zIndex = index;
 
-                // --- 交互事件 ---
                 swatch.addEventListener('click', function () {
                     highestZIndex++;
                     this.style.zIndex = highestZIndex;
-
                     const hexToCopy = colorItem.hex;
                     if (navigator.clipboard) {
                         navigator.clipboard.writeText(hexToCopy).then(() => {
@@ -174,10 +169,7 @@
                 });
 
                 container.appendChild(swatch);
-
-                setTimeout(() => {
-                    swatch.style.opacity = '1';
-                }, index * 40 + 50);
+                setTimeout(() => { swatch.style.opacity = '1'; }, index * 35 + 50);
             });
         }
 
