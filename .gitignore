@@ -55,3 +55,7 @@ ehthumbs.db
 # JetBrains IDEs (WebStorm, etc.)
 .idea/
 
+.github/
+
+.firebase/
+.firebaserc
