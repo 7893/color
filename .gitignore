@@ -10,10 +10,15 @@ node_modules/
 
 
 # ===================================================================
-#  构建产物 (Build Artifacts)
+#  构建产物 & 测试报告 (Build Artifacts & Test Reports)
 # ===================================================================
 # Vite 或其他打包工具的构建输出目录
 dist/
+dist-ssr/
+*.js.map
+
+# 测试覆盖率报告目录 (新增)
+coverage/
 
 
 # ===================================================================
@@ -25,6 +30,7 @@ npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
 firebase-debug.log*
+yarn-error.log*
 
 
 # ===================================================================
@@ -35,6 +41,10 @@ firebase-debug.log*
 .env.local
 .env.*.local
 .env.*
+# 保留 .env.example 文件，作为环境变量的模板 (新增)
+!.env.example
+!.env.development
+!.env.production
 
 
 # ===================================================================
@@ -47,10 +57,15 @@ firebase-debug.log*
 Thumbs.db
 ehthumbs.db
 
+# 通用临时文件 (新增)
+*.tmp
+*.swp
+
 # VSCode
 .vscode/
 # 如果你想共享某些VSCode设置，可以取消下面这行的注释
 # !.vscode/settings.json
+# !.vscode/extensions.json
 
 # JetBrains IDEs (WebStorm, etc.)
 .idea/

@@ -7,7 +7,6 @@ const CONFIG = {
   COVERAGE_RATIO: 0.35,
   MIN_SIZE: 90,
   MAX_SIZE: 220,
-  // 改进：调小字体
   FONT_SIZE_RATIO: 0.10,
   MIN_FONT_SIZE: 10,
 };
@@ -70,8 +69,9 @@ class PaletteApp {
   }
 
   createSwatchElement(colorItem, layout, index) {
+    // 最终修复：回归到 swatch > inner > info 的两层稳定结构
     const swatch = document.createElement('div');
-    const swatchInner = document.createElement('div');
+    const inner = document.createElement('div');
     const info = document.createElement('div');
 
     swatch.className = 'color-swatch';
@@ -80,8 +80,8 @@ class PaletteApp {
     swatch.style.zIndex = index;
     swatch.style.opacity = '0';
 
-    swatchInner.className = 'swatch-inner';
-    swatchInner.style.backgroundColor = colorItem.hex;
+    inner.className = 'swatch-inner';
+    inner.style.backgroundColor = colorItem.hex;
 
     info.className = 'color-info';
     info.innerHTML = `${colorItem.name}<br>${colorItem.hex}`;
@@ -89,8 +89,8 @@ class PaletteApp {
     const textColorClass = this.getTextColorClass(colorItem.hex);
     info.classList.add(textColorClass);
 
-    swatchInner.appendChild(info);
-    swatch.appendChild(swatchInner);
+    inner.appendChild(info);
+    swatch.appendChild(inner);
 
     this.attachSwatchListeners(swatch, { colorItem });
     return swatch;
@@ -114,14 +114,16 @@ class PaletteApp {
     const initialX = Math.random() * layout.width;
     const initialY = Math.random() * layout.height;
 
-    // 改进：重新加入 CSS 变量，用于反向旋转文字
     swatch.style.setProperty('--inverse-rotation', `-${rotation}deg`);
-    swatch.style.transform = `translate3d(${initialX}px, ${initialY}px, 0) scale(${initialScale}) rotate(${rotation}deg)`;
+
+    const initialTransform = `translate3d(${initialX}px, ${initialY}px, 0) scale(${initialScale}) rotate(${rotation}deg)`;
+    swatch.style.transform = initialTransform;
 
     const margin = layout.size * 0.6;
     const finalX = margin + Math.random() * (layout.width - 2 * margin) - layout.size / 2;
     const finalY = margin + Math.random() * (layout.height - 2 * margin) - layout.size / 2;
 
+    // 最终修复：旋转和位移都在同一个 transform 中
     const restingTransform = `translate3d(${finalX}px, ${finalY}px, 0) scale(1) rotate(${rotation}deg)`;
 
     requestAnimationFrame(() => {
