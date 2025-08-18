@@ -1,3 +1,3 @@
 # Color Palette
 
-**Live Demo:** [https://e50914.web.app](https://e50914.web.app)
+**Live Demo:** [https://color-palette-817261716888.us-central1.run.app](https://color-palette-817261716888.us-central1.run.app)

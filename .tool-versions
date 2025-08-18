@@ -1,5 +1,7 @@
-awscli 2.28.11
-firebase 14.12.1
-nodejs 22.18.0
-python 3.13.7
+nodejs    24.6.0
+python    3.13.7t
+awscli    2.28.11
 terraform 1.12.2
+gcloud    534.0.0
+firebase  14.12.1
+
