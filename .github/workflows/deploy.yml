@@ -1,36 +1,56 @@
-name: Deploy to Firebase Hosting
+# 工作流的名称，会显示在 GitHub Actions 页面
+name: Deploy to Google Cloud Run
 
+# 触发工作流的事件
 on:
+  # 当有代码推送到 main 分支时触发
   push:
-    branches:
-      - main
+    branches: [ "main" ]
 
+# 工作流包含的任务
 jobs:
   deploy:
-    runs-on: ubuntu-22.04
+    # 运行此任务所需的权限
+    permissions:
+      contents: 'read'
+      id-token: 'write'
 
+    # 任务运行的环境
+    runs-on: ubuntu-latest
+
+    # 任务包含的步骤
     steps:
-      - name: Checkout repo
+      # 第一步：检出代码
+      # 拉取你的仓库代码到 Actions 的运行环境中
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      # 第二步：通过服务账户密钥向 Google Cloud 进行身份验证
+      # 这里会使用我们之前设置的名为 GCP_SA_KEY 的 Secret
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: 'google-github-actions/auth@v2'
         with:
-          node-version: 22
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
 
-      - name: Install pnpm
-        run: npm install -g pnpm
+      # 第三步：设置 gcloud CLI
+      # 安装并配置 Google Cloud 的命令行工具
+      - name: Set up Cloud SDK
+        uses: 'google-github-actions/setup-gcloud@v2'
 
-      - name: Install dependencies
-        run: pnpm install
+      # 第四步：构建并推送容器镜像到 Artifact Registry
+      # 运行我们之前手动执行过的构建命令
+      - name: Build and Push Container Image
+        run: |-
+          gcloud builds submit --tag us-central1-docker.pkg.dev/sigma-outcome/cloud-run-source-deploy/color-palette
 
-      - name: Build project
-        run: pnpm run build
-
-      - name: Deploy to Firebase
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: "${{ secrets.GITHUB_TOKEN }}"
-          firebaseServiceAccount: "${{ secrets.FIREBASE_SERVICE_ACCOUNT_E50914 }}"
-          channelId: live
-          projectId: e50914
+      # 第五步：部署容器到 Cloud Run
+      # 运行我们之前手动执行过的部署命令，使用我们最终确定的服务名称
+      - name: Deploy to Cloud Run
+        run: |-
+          gcloud run deploy color-palette \
+            --image us-central1-docker.pkg.dev/sigma-outcome/cloud-run-source-deploy/color-palette \
+            --platform managed \
+            --region us-central1 \
+            --allow-unauthenticated \
+            --port 80
