@@ -1,0 +1,21 @@
+server {
+    listen       ${PORT};
+    server_name  localhost;
+
+    # 指定网站根目录
+    root   /usr/share/nginx/html;
+    index  index.html index.htm;
+
+    # 这个配置对于单页应用（SPA）很重要，
+    # 它确保了当用户刷新页面或直接访问子路径时，
+    # 总是返回 index.html，由前端路由处理后续逻辑。
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 处理错误的页面
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+}

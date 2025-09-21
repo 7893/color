@@ -1,0 +1,79 @@
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #1C1C1E;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.palette-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  perspective: 1500px;
+}
+
+.color-swatch {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 12px;
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+  transition: transform 1.2s cubic-bezier(0.23, 1, 0.32, 1),
+    opacity 1.2s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.swatch-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: inherit;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45);
+  transform-style: preserve-3d;
+  will-change: transform, box-shadow;
+  /* 悬浮时的放大和阴影动画 */
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 悬浮时，视觉层放大 */
+.color-swatch:hover .swatch-inner {
+  transform: scale(1.15);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+}
+
+.color-info {
+  width: 90%;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.3;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+  /* 最终修复：文字只负责反向旋转，不再有其它 transform 动画 */
+  transform: rotate(var(--inverse-rotation, 0deg));
+  transition: opacity 0.4s ease-out 0.1s;
+}
+
+/* 悬浮时，文字只改变透明度 */
+.color-swatch:hover .color-info {
+  opacity: 1;
+}
+
+.color-info.text-light {
+  color: #FFFFFF;
+}
+
+.color-info.text-dark {
+  color: #2c2c2e;
+}
