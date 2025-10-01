@@ -9,11 +9,24 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+#glCanvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+}
+
 .palette-container {
   position: relative;
   width: 100%;
   height: 100%;
   perspective: 1500px;
+  pointer-events: none;
+}
+
+.color-swatch {
+  pointer-events: auto;
 }
 
 .color-swatch {
