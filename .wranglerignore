@@ -1,0 +1,19 @@
+# 排除不需要上传到 Cloudflare 的文件
+node_modules/
+.pnpm-store/
+.vite/
+coverage/
+logs/
+*.log
+.cache/
+.eslintcache
+.vscode/
+.idea/
+.firebase/
+.env
+.env.*
+README.md
+.github/
+src/
+index.html
+pnpm-lock.yaml
