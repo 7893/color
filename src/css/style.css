@@ -7,6 +7,11 @@ body {
   height: 100vh;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
+  /* 强制硬件加速 */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 #glCanvas {
@@ -23,6 +28,10 @@ body {
   height: 100%;
   perspective: 1500px;
   pointer-events: none;
+  /* 强制硬件加速 */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
 }
 
 .color-swatch {
@@ -50,6 +59,11 @@ body {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45);
   transform-style: preserve-3d;
   will-change: transform, box-shadow;
+  /* 强制硬件加速 */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
   /* 悬浮时的放大和阴影动画 */
   transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1);

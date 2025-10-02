@@ -1,28 +1,36 @@
 # ===================================================================
-#  依赖 & 临时文件 (Dependencies & Temp Files)
+#  依赖 & 临时文件 (Dependencies & Temp Files)
 # ===================================================================
 # 所有包管理器的依赖目录
 node_modules/
 .pnpm-store/
+.yarn/
+.npm/
 
 # Vite 缓存目录
 .vite/
+vite.config.js.timestamp-*
 
 
 # ===================================================================
-#  构建产物 & 测试报告 (Build Artifacts & Test Reports)
+#  构建产物 & 测试报告 (Build Artifacts & Test Reports)
 # ===================================================================
 # Vite 或其他打包工具的构建输出目录
 dist/
 dist-ssr/
 *.js.map
+*.css.map
 
-# 测试覆盖率报告目录 (新增)
+# 测试覆盖率报告目录
 coverage/
+.nyc_output/
+
+# TypeScript 编译输出
+*.tsbuildinfo
 
 
 # ===================================================================
-#  日志文件 (Log Files)
+#  日志文件 (Log Files)
 # ===================================================================
 logs/
 *.log
@@ -37,7 +45,7 @@ yarn-error.log*
 
 
 # ===================================================================
-#  环境变量文件 (Environment Variables) - [!] 非常重要
+#  环境变量文件 (Environment Variables) - [!] 非常重要
 # ===================================================================
 # 绝对不要提交包含敏感信息的环境变量文件
 .env
@@ -49,18 +57,26 @@ yarn-error.log*
 
 
 # ===================================================================
-#  操作系统 / IDE 特定文件 (OS / IDE Specific)
+#  操作系统 / IDE 特定文件 (OS / IDE Specific)
 # ===================================================================
 # macOS
 .DS_Store
+.AppleDouble
+.LSOverride
 
 # Windows
 Thumbs.db
 ehthumbs.db
+Desktop.ini
 
-# 通用临时文件 (新增)
+# Linux
+*~
+
+# 通用临时文件
 *.tmp
 *.swp
+*.swo
+*~
 
 # VSCode
 .vscode/
@@ -70,6 +86,10 @@ ehthumbs.db
 
 # JetBrains IDEs (WebStorm, etc.)
 .idea/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
 
 # Firebase CLI 缓存和账户信息，通常建议忽略
 .firebase/
@@ -81,3 +101,26 @@ ehthumbs.db
 # Wrangler 本地状态与调试环境变量
 .wrangler/
 .dev.vars
+
+# Cloudflare 本地开发文件
+wrangler.toml.bak
+
+
+# ===================================================================
+#  本地开发文件 (Local Development)
+# ===================================================================
+# 本地预览服务器文件
+.vercel/
+.netlify/
+
+# 热重载相关
+.hot-update.*
+
+# 本地数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 本地配置文件
+local.config.js
+local.config.json
