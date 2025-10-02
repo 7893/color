@@ -3,5 +3,10 @@ main = "worker/index.js"
 compatibility_date = "2025-01-17"
 assets = { directory = "dist", binding = "ASSETS" }
 
+[[d1_databases]]
+binding = "DB"
+database_name = "color-snapshots"
+database_id = "39598343-0990-452e-a58e-be2a00a9470c"
+
 [build]
 command = "pnpm build"

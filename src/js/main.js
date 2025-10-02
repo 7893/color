@@ -22,6 +22,8 @@ class PaletteApp {
     this.colors = colors;
     this.highestZIndex = 0;
     this.resizeTimer = null;
+    this.currentSnapshot = null;
+    this.userId = this.getUserId();
     this.init();
   }
 
@@ -30,10 +32,25 @@ class PaletteApp {
     this.attachGlobalListeners();
   }
 
+  getUserId() {
+    let userId = localStorage.getItem('color-user-id');
+    if (!userId) {
+      userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('color-user-id', userId);
+    }
+    return userId;
+  }
+
   attachGlobalListeners() {
     window.addEventListener('resize', () => {
       clearTimeout(this.resizeTimer);
       this.resizeTimer = setTimeout(() => this.generateSwatches(), 250);
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (this.currentSnapshot) {
+        this.saveSnapshot();
+      }
     });
   }
 
@@ -43,11 +60,42 @@ class PaletteApp {
     const selectedColors = this.pickRandomUniqueColors(this.colors, layout.swatchCount);
     this.highestZIndex = selectedColors.length;
 
+    const positions = [];
     selectedColors.forEach((colorItem, index) => {
       const swatch = this.createSwatchElement(colorItem, layout, index);
       this.container.appendChild(swatch);
-      this.animateIn(swatch, layout);
+      const position = this.animateIn(swatch, layout);
+      positions.push({ ...position, color: colorItem.hex });
     });
+
+    this.currentSnapshot = {
+      colors: selectedColors.map(c => c.hex),
+      positions: positions,
+      deviceType: layout.width > 1024 ? 'desktop' : layout.width > 768 ? 'tablet' : 'mobile'
+    };
+  }
+
+  async saveSnapshot() {
+    if (!this.currentSnapshot) return;
+    
+    const snapshot = {
+      id: 'snap_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+      userId: this.userId,
+      colors: JSON.stringify(this.currentSnapshot.colors),
+      positions: JSON.stringify(this.currentSnapshot.positions),
+      deviceType: this.currentSnapshot.deviceType,
+      createdAt: new Date().toLocaleString('zh-HK', { timeZone: 'Asia/Hong_Kong' })
+    };
+
+    try {
+      await fetch('/api/snapshots', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(snapshot)
+      });
+    } catch (error) {
+      console.error('保存快照失败:', error);
+    }
   }
 
   calculateLayoutParameters() {
@@ -123,13 +171,14 @@ class PaletteApp {
     const finalX = margin + Math.random() * (layout.width - 2 * margin) - layout.size / 2;
     const finalY = margin + Math.random() * (layout.height - 2 * margin) - layout.size / 2;
 
-    // 最终修复：旋转和位移都在同一个 transform 中
     const restingTransform = `translate3d(${finalX}px, ${finalY}px, 0) scale(1) rotate(${rotation}deg)`;
 
     requestAnimationFrame(() => {
       swatch.style.transform = restingTransform;
       swatch.style.opacity = '1';
     });
+
+    return { x: finalX, y: finalY, rotation: rotation };
   }
 
   getTextColorClass(hex) {
