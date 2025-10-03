@@ -115,19 +115,3 @@ function jsonResponse(data, status = 200) {
   });
 }
 
-async function checkRateLimit(env, clientIP) {
-  const key = `ratelimit:${clientIP}`;
-  const now = Date.now();
-  const stored = await env.DB.prepare('SELECT created_at FROM color_snapshots WHERE user_id = ? AND created_at > ?')
-    .bind(clientIP, new Date(now - RATE_LIMIT.window).toISOString())
-    .all();
-  
-  return stored.results.length < RATE_LIMIT.requests;
-}
-
-function jsonResponse(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' }
-  });
-}
