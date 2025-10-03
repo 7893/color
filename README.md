@@ -1,3 +1,3 @@
-# Color Palette Generator
+# Color
 
-Interactive color palette generator with hardware-accelerated animations deployed on Cloudflare Workers.
+Random color picker with hardware-accelerated animations.
