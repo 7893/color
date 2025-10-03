@@ -20,6 +20,9 @@ vite.config.js.timestamp-*
 .mf/
 wrangler.toml.bak
 
+# Git tools
+.git-tools/
+
 # Environment variables
 .env
 .env.local
