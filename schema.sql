@@ -9,3 +9,4 @@ CREATE TABLE color_snapshots (
 
 CREATE INDEX idx_user_id ON color_snapshots(user_id);
 CREATE INDEX idx_created_at ON color_snapshots(created_at);
+
