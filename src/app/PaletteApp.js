@@ -1,21 +1,11 @@
-import { masterColorsList } from './colors.js';
+import { getTextColorClass, pickRandomColors } from '../utils/helpers.js';
+import { saveSnapshot } from '../services/api.js';
 
-const CONFIG = {
-  DESKTOP_COUNT: 25,
-  TABLET_COUNT: 16,
-  MOBILE_COUNT: 12,
-  COVERAGE_RATIO: 0.35,
-  MIN_SIZE: 90,
-  MAX_SIZE: 220,
-  FONT_SIZE_RATIO: 0.10,
-  MIN_FONT_SIZE: 10,
-};
-
-class PaletteApp {
+export class PaletteApp {
   constructor(containerId, config, colors) {
     this.container = document.getElementById(containerId);
     if (!this.container) {
-      console.error("Initialization failed: Container not found.");
+      console.error('Container not found');
       return;
     }
     this.config = config;
@@ -35,7 +25,7 @@ class PaletteApp {
   getUserId() {
     let userId = localStorage.getItem('color-user-id');
     if (!userId) {
-      userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       localStorage.setItem('color-user-id', userId);
     }
     return userId;
@@ -57,7 +47,7 @@ class PaletteApp {
   generateSwatches() {
     this.container.innerHTML = '';
     const layout = this.calculateLayoutParameters();
-    const selectedColors = this.pickRandomUniqueColors(this.colors, layout.swatchCount);
+    const selectedColors = pickRandomColors(this.colors, layout.swatchCount);
     this.highestZIndex = selectedColors.length;
 
     const positions = [];
@@ -70,7 +60,7 @@ class PaletteApp {
 
     this.currentSnapshot = {
       colors: selectedColors.map(c => c.hex),
-      positions: positions,
+      positions,
       deviceType: layout.width > 1024 ? 'desktop' : layout.width > 768 ? 'tablet' : 'mobile'
     };
   }
@@ -79,7 +69,7 @@ class PaletteApp {
     if (!this.currentSnapshot) return;
     
     const snapshot = {
-      id: 'snap_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+      id: `snap_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       userId: this.userId,
       colors: JSON.stringify(this.currentSnapshot.colors),
       positions: JSON.stringify(this.currentSnapshot.positions),
@@ -87,15 +77,7 @@ class PaletteApp {
       createdAt: new Date().toLocaleString('zh-HK', { timeZone: 'Asia/Hong_Kong' })
     };
 
-    try {
-      await fetch('/api/snapshots', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(snapshot)
-      });
-    } catch (error) {
-      console.error('保存快照失败:', error);
-    }
+    await saveSnapshot(snapshot);
   }
 
   calculateLayoutParameters() {
@@ -117,7 +99,6 @@ class PaletteApp {
   }
 
   createSwatchElement(colorItem, layout, index) {
-    // 最终修复：回归到 swatch > inner > info 的两层稳定结构
     const swatch = document.createElement('div');
     const inner = document.createElement('div');
     const info = document.createElement('div');
@@ -134,17 +115,16 @@ class PaletteApp {
     info.className = 'color-info';
     info.innerHTML = `${colorItem.name}<br>${colorItem.hex}`;
     info.style.fontSize = `${layout.fontSize}px`;
-    const textColorClass = this.getTextColorClass(colorItem.hex);
-    info.classList.add(textColorClass);
+    info.classList.add(getTextColorClass(colorItem.hex));
 
     inner.appendChild(info);
     swatch.appendChild(inner);
 
-    this.attachSwatchListeners(swatch, { colorItem });
+    this.attachSwatchListeners(swatch, colorItem);
     return swatch;
   }
 
-  attachSwatchListeners(swatch, { colorItem }) {
+  attachSwatchListeners(swatch, colorItem) {
     swatch.addEventListener('mouseenter', () => {
       this.highestZIndex++;
       swatch.style.zIndex = this.highestZIndex;
@@ -152,7 +132,7 @@ class PaletteApp {
 
     swatch.addEventListener('click', (e) => {
       e.stopPropagation();
-      navigator.clipboard?.writeText(colorItem.hex).catch(err => console.error("Copy failed", err));
+      navigator.clipboard?.writeText(colorItem.hex).catch(err => console.error('Copy failed', err));
     });
   }
 
@@ -178,34 +158,6 @@ class PaletteApp {
       swatch.style.opacity = '1';
     });
 
-    return { x: finalX, y: finalY, rotation: rotation };
-  }
-
-  getTextColorClass(hex) {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    const luma = 0.299 * r + 0.587 * g + 0.114 * b;
-    return luma > 150 ? 'text-dark' : 'text-light';
-  }
-
-  pickRandomUniqueColors(list, count) {
-    const shuffled = [...list].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, Math.min(count, list.length));
+    return { x: finalX, y: finalY, rotation };
   }
 }
-
-function initGL() {
-  const canvas = document.getElementById('glCanvas');
-  if (!canvas) return null;
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  const gl = canvas.getContext('webgl2', { powerPreference: 'high-performance' }) || canvas.getContext('webgl', { powerPreference: 'high-performance' });
-  if (!gl) return null;
-  return { canvas, gl };
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const glCtx = initGL();
-  new PaletteApp('paletteContainer', CONFIG, masterColorsList);
-});

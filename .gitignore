@@ -1,126 +1,64 @@
-# ===================================================================
-#  依赖 & 临时文件 (Dependencies & Temp Files)
-# ===================================================================
-# 所有包管理器的依赖目录
+# Dependencies
 node_modules/
 .pnpm-store/
 .yarn/
 .npm/
 
-# Vite 缓存目录
-.vite/
-vite.config.js.timestamp-*
-
-
-# ===================================================================
-#  构建产物 & 测试报告 (Build Artifacts & Test Reports)
-# ===================================================================
-# Vite 或其他打包工具的构建输出目录
+# Build output
 dist/
 dist-ssr/
 *.js.map
 *.css.map
 
-# 测试覆盖率报告目录
-coverage/
-.nyc_output/
+# Vite cache
+.vite/
+vite.config.js.timestamp-*
 
-# TypeScript 编译输出
-*.tsbuildinfo
+# Cloudflare Workers
+.wrangler/
+.dev.vars
+.mf/
+wrangler.toml.bak
 
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.*
+!.env.example
 
-# ===================================================================
-#  日志文件 (Log Files)
-# ===================================================================
+# Logs
 logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
-firebase-debug.log*
-yarn-error.log*
 .eslintcache
-.cache/
-.npmrc
 
-
-# ===================================================================
-#  环境变量文件 (Environment Variables) - [!] 非常重要
-# ===================================================================
-# 绝对不要提交包含敏感信息的环境变量文件
-.env
-.env.local
-.env.*.local
-.env.*
-# 仅保留 .env.example 作为模板，严禁提交真实环境文件
-!.env.example
-
-
-# ===================================================================
-#  操作系统 / IDE 特定文件 (OS / IDE Specific)
-# ===================================================================
-# macOS
+# OS files
 .DS_Store
-.AppleDouble
-.LSOverride
-
-# Windows
 Thumbs.db
-ehthumbs.db
 Desktop.ini
-
-# Linux
 *~
 
-# 通用临时文件
-*.tmp
-*.swp
-*.swo
-*~
-
-# VSCode
+# IDE
 .vscode/
-# 如果你想共享某些VSCode设置，可以取消下面这行的注释
-# !.vscode/settings.json
-# !.vscode/extensions.json
-
-# JetBrains IDEs (WebStorm, etc.)
 .idea/
-
-# Sublime Text
 *.sublime-project
 *.sublime-workspace
 
-# Firebase CLI 缓存和账户信息，通常建议忽略
-.firebase/
+# Test coverage
+coverage/
+.nyc_output/
 
+# TypeScript
+*.tsbuildinfo
 
-# ===================================================================
-#  Cloudflare Worker 相关 (Cloudflare Worker)
-# ===================================================================
-# Wrangler 本地状态与调试环境变量
-.wrangler/
-.dev.vars
-
-# Cloudflare 本地开发文件
-wrangler.toml.bak
-
-
-# ===================================================================
-#  本地开发文件 (Local Development)
-# ===================================================================
-# 本地预览服务器文件
+# Local development
 .vercel/
 .netlify/
-
-# 热重载相关
-.hot-update.*
-
-# 本地数据库文件
+.firebase/
 *.db
 *.sqlite
 *.sqlite3
-
-# 本地配置文件
-local.config.js
-local.config.json
+local.config.*

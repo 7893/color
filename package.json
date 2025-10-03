@@ -1,12 +1,13 @@
 {
   "name": "color",
   "version": "1.0.1",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "cf:deploy": "pnpm exec wrangler deploy",
-    "cf:preview": "pnpm exec wrangler dev --local --port 8787"
+    "deploy": "pnpm build && wrangler deploy",
+    "cf:dev": "wrangler dev --local --port 8787"
   },
   "devDependencies": {
     "vite": "^7.1.6",
