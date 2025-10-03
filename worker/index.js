@@ -2,21 +2,24 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     
-    // API 路由处理
+    // Handle API routes
     if (url.pathname.startsWith('/api/')) {
       return handleAPI(request, env, url);
     }
 
+    // Serve static assets
     const response = await env.ASSETS.fetch(request);
     if (response.status !== 404) {
       return response;
     }
 
+    // Skip SPA fallback for asset files
     const isAsset = url.pathname.includes('.') && !url.pathname.endsWith('.html');
     if (isAsset) {
       return response;
     }
 
+    // SPA fallback to index.html
     return env.ASSETS.fetch(new Request(`${url.origin}/index.html`, request));
   },
 };
