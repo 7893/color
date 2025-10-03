@@ -7,7 +7,7 @@ body {
   height: 100vh;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
-  /* 强制硬件加速 */
+  /* Force hardware acceleration */
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
   backface-visibility: hidden;
@@ -28,7 +28,7 @@ body {
   height: 100%;
   perspective: 1500px;
   pointer-events: none;
-  /* 强制硬件加速 */
+  /* Force hardware acceleration */
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
   will-change: transform;
@@ -59,12 +59,12 @@ body {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.45);
   transform-style: preserve-3d;
   will-change: transform, box-shadow;
-  /* 强制硬件加速 */
+  /* Force hardware acceleration */
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
-  /* 悬浮时的放大和阴影动画 */
+  /* Scale and shadow animation on hover */
   transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1);
   display: flex;
@@ -72,7 +72,7 @@ body {
   justify-content: center;
 }
 
-/* 悬浮时，视觉层放大 */
+/* Scale visual layer on hover */
 .color-swatch:hover .swatch-inner {
   transform: scale(1.15);
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
@@ -87,12 +87,12 @@ body {
   opacity: 0;
   pointer-events: none;
   will-change: transform, opacity;
-  /* 最终修复：文字只负责反向旋转，不再有其它 transform 动画 */
+  /* Text only handles inverse rotation, no other transform animations */
   transform: rotate(var(--inverse-rotation, 0deg));
   transition: opacity 0.4s ease-out 0.1s;
 }
 
-/* 悬浮时，文字只改变透明度 */
+/* Show text on hover */
 .color-swatch:hover .color-info {
   opacity: 1;
 }

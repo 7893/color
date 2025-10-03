@@ -74,7 +74,7 @@ export class PaletteApp {
       colors: JSON.stringify(this.currentSnapshot.colors),
       positions: JSON.stringify(this.currentSnapshot.positions),
       deviceType: this.currentSnapshot.deviceType,
-      createdAt: new Date().toLocaleString('zh-HK', { timeZone: 'Asia/Hong_Kong' })
+      createdAt: new Date().toISOString()
     };
 
     await saveSnapshot(snapshot);
