@@ -37,6 +37,7 @@ async function handleAPI(request, env, url) {
 
       const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
       const userAgent = request.headers.get('User-Agent') || 'unknown';
+      const userAgentHash = userAgent.substring(0, 50);
       const referer = request.headers.get('Referer') || 'unknown';
 
       const contentLength = request.headers.get('content-length');
@@ -57,9 +58,9 @@ async function handleAPI(request, env, url) {
         return jsonResponse({ error: validated.error }, 400, origin);
       }
 
-      const rateLimitCheck = await checkRateLimit(env, clientIP, userAgent);
+      const rateLimitCheck = await checkRateLimit(env, clientIP, userAgentHash);
       if (!rateLimitCheck.allowed) {
-        console.warn('Rate limit exceeded:', { ip: clientIP, ua: userAgent.substring(0, 50) });
+        console.warn('Rate limit exceeded:', { ip: clientIP, ua: userAgentHash });
         return jsonResponse({ 
           error: 'Rate limit exceeded',
           retryAfter: rateLimitCheck.retryAfter 
@@ -79,7 +80,7 @@ async function handleAPI(request, env, url) {
         validated.data.positions,
         validated.data.deviceType,
         createdAt,
-        userAgent,
+        userAgentHash,
         referer
       ).run();
 
@@ -185,13 +186,17 @@ function validateSnapshot(data) {
     return { valid: false, error: 'Positions is not a valid JSON array' };
   }
 
+  if (parsedColors.length !== parsedPositions.length) {
+    return { valid: false, error: 'Colors and positions array length mismatch' };
+  }
+
   return {
     valid: true,
     data: { userId, colors: JSON.stringify(parsedColors), positions: JSON.stringify(parsedPositions), deviceType }
   };
 }
 
-async function checkRateLimit(env, clientIP, userAgent) {
+async function checkRateLimit(env, clientIP, userAgentHash) {
   const now = Date.now();
   const windowStart = new Date(now - RATE_LIMIT.window).toISOString();
   const dayStart = new Date(now - 86400000).toISOString();
@@ -201,11 +206,10 @@ async function checkRateLimit(env, clientIP, userAgent) {
   let recentQuery, dailyQuery;
   
   if (clientIP === 'unknown') {
-    const uaHash = userAgent.substring(0, 50);
     recentQuery = env.DB.prepare('SELECT COUNT(*) as count FROM color_snapshots WHERE client_ip = ? AND user_agent = ? AND created_at > ?')
-      .bind(clientIP, uaHash, windowStart);
+      .bind(clientIP, userAgentHash, windowStart);
     dailyQuery = env.DB.prepare('SELECT COUNT(*) as count FROM color_snapshots WHERE client_ip = ? AND user_agent = ? AND created_at > ?')
-      .bind(clientIP, uaHash, dayStart);
+      .bind(clientIP, userAgentHash, dayStart);
   } else {
     recentQuery = env.DB.prepare('SELECT COUNT(*) as count FROM color_snapshots WHERE client_ip = ? AND created_at > ?')
       .bind(clientIP, windowStart);
@@ -219,10 +223,8 @@ async function checkRateLimit(env, clientIP, userAgent) {
   ]);
   
   if (dailyRequests.count >= dailyLimit) {
-    return { 
-      allowed: false, 
-      retryAfter: Math.ceil((86400000 - (now - new Date(dayStart).getTime())) / 1000)
-    };
+    const retryAfter = Math.max(1, Math.ceil((86400000 - (now - new Date(dayStart).getTime())) / 1000));
+    return { allowed: false, retryAfter };
   }
   
   if (recentRequests.count >= RATE_LIMIT.requests) {
