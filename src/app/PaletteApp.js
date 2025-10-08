@@ -145,17 +145,18 @@ export class PaletteApp {
     const normX = this.getHaltonValue(index, 2);
     const normY = this.getHaltonValue(index, 3);
 
-    const baseMarginX = Math.min(layout.width * 0.05, 40);
-    const baseMarginY = Math.min(layout.height * 0.05, 40);
+    const isMobile = layout.width <= 768;
+    const baseMarginX = isMobile ? Math.min(layout.width * 0.03, 20) : Math.min(layout.width * 0.05, 40);
+    const baseMarginY = isMobile ? Math.min(layout.height * 0.03, 20) : Math.min(layout.height * 0.05, 40);
 
-    let marginX = Math.max(baseMarginX, layout.size * 0.08);
-    let marginY = Math.max(baseMarginY, layout.size * 0.08);
+    let marginX = Math.max(baseMarginX, layout.size * 0.05);
+    let marginY = Math.max(baseMarginY, layout.size * 0.05);
 
     const usableWidth = Math.max(layout.width - 2 * marginX - layout.size, 0);
     const usableHeight = Math.max(layout.height - 2 * marginY - layout.size, 0);
 
-    const jitterXRange = usableWidth > 0 ? Math.min(layout.size * 0.2, usableWidth * 0.5) : 0;
-    const jitterYRange = usableHeight > 0 ? Math.min(layout.size * 0.2, usableHeight * 0.5) : 0;
+    const jitterXRange = usableWidth > 0 ? Math.min(layout.size * 0.15, usableWidth * 0.3) : 0;
+    const jitterYRange = usableHeight > 0 ? Math.min(layout.size * 0.15, usableHeight * 0.3) : 0;
 
     let left = marginX + normX * usableWidth;
     let top = marginY + normY * usableHeight;
@@ -166,14 +167,15 @@ export class PaletteApp {
     const maxLeft = layout.width - layout.size - marginX;
     const maxTop = layout.height - layout.size - marginY;
 
-    left = Math.min(Math.max(left, marginX), maxLeft);
-    top = Math.min(Math.max(top, marginY), maxTop);
+    left = Math.max(marginX, Math.min(left, maxLeft));
+    top = Math.max(marginY, Math.min(top, maxTop));
 
     return { x: left, y: top };
   }
 
   calculateLayoutParameters() {
-    const { width, height } = this.container.getBoundingClientRect();
+    const width = window.innerWidth;
+    const height = window.innerHeight;
     const area = width * height;
     let swatchCount;
 
