@@ -144,12 +144,7 @@ export class PaletteApp {
     let marginX = Math.max(baseMarginX, layout.size * 0.08);
     let marginY = Math.max(baseMarginY, layout.size * 0.08);
 
-    if (layout.width < layout.size + marginX * 2) {
-      marginX = Math.max((layout.width - layout.size) / 2, 0);
-    }
-    if (layout.height < layout.size + marginY * 2) {
-      marginY = Math.max((layout.height - layout.size) / 2, 0);
-    }
+
 
     const usableWidth = Math.max(layout.width - 2 * marginX - layout.size, 0);
     const usableHeight = Math.max(layout.height - 2 * marginY - layout.size, 0);
