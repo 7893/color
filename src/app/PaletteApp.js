@@ -183,26 +183,45 @@ export class PaletteApp {
     const initialTransform = `translate3d(${initialX}px, ${initialY}px, 0) scale(${initialScale}) rotate(${rotation}deg)`;
     swatch.style.transform = initialTransform;
 
-    const dynamicMargin = Math.min(
+    const baseMargin = Math.min(
       layout.size * 0.5,
       layout.width * 0.1,
       layout.height * 0.1
     );
+    const marginX = Math.min(baseMargin, Math.max(0, (layout.width - layout.size) / 2));
+    const marginY = Math.min(baseMargin, Math.max(0, (layout.height - layout.size) / 2));
 
-    const minCenterX = dynamicMargin + layout.size / 2;
-    const maxCenterX = layout.width - dynamicMargin - layout.size / 2;
-    const minCenterY = dynamicMargin + layout.size / 2;
-    const maxCenterY = layout.height - dynamicMargin - layout.size / 2;
+    const minCenterX = marginX + layout.size / 2;
+    const maxCenterX = layout.width - marginX - layout.size / 2;
+    const minCenterY = marginY + layout.size / 2;
+    const maxCenterY = layout.height - marginY - layout.size / 2;
 
-    const centerX = maxCenterX > minCenterX
-      ? minCenterX + Math.random() * (maxCenterX - minCenterX)
-      : layout.width / 2;
-    const centerY = maxCenterY > minCenterY
-      ? minCenterY + Math.random() * (maxCenterY - minCenterY)
-      : layout.height / 2;
+    const jitterX = Math.min(layout.size * 0.25, layout.width * 0.1);
+    const jitterY = Math.min(layout.size * 0.25, layout.height * 0.1);
 
-    const finalX = centerX - layout.size / 2;
-    const finalY = centerY - layout.size / 2;
+    const chooseCenter = (min, max, fallback, jitter) => {
+      if (max > min) {
+        return min + Math.random() * (max - min);
+      }
+      const offset = (Math.random() - 0.5) * jitter;
+      return fallback + offset;
+    };
+
+    const centerX = chooseCenter(minCenterX, maxCenterX, layout.width / 2, jitterX);
+    const centerY = chooseCenter(minCenterY, maxCenterY, layout.height / 2, jitterY);
+
+    const clampedCenterX = Math.min(
+      Math.max(centerX, layout.size / 2),
+      Math.max(layout.size / 2, layout.width - layout.size / 2)
+    );
+
+    const clampedCenterY = Math.min(
+      Math.max(centerY, layout.size / 2),
+      Math.max(layout.size / 2, layout.height - layout.size / 2)
+    );
+
+    const finalX = clampedCenterX - layout.size / 2;
+    const finalY = clampedCenterY - layout.size / 2;
 
     const restingTransform = `translate3d(${finalX}px, ${finalY}px, 0) scale(1) rotate(${rotation}deg)`;
 
