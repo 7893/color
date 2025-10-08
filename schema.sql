@@ -14,3 +14,4 @@ CREATE INDEX idx_user_id ON color_snapshots(user_id);
 CREATE INDEX idx_client_ip ON color_snapshots(client_ip);
 CREATE INDEX idx_created_at ON color_snapshots(created_at);
 CREATE INDEX idx_client_ip_created_at ON color_snapshots(client_ip, created_at);
+CREATE INDEX idx_unknown_ip_ua ON color_snapshots(client_ip, user_agent, created_at) WHERE client_ip = 'unknown';
