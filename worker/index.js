@@ -1,4 +1,4 @@
-const RATE_LIMIT = { requests: 10, window: 60000 };
+const RATE_LIMIT = { requests: 2, window: 1000 };
 const MAX_PAYLOAD_SIZE = 10240;
 
 export default {
