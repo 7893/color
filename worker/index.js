@@ -35,7 +35,7 @@ async function handleAPI(request, env, url) {
   if (url.pathname === '/api/snapshots' && request.method === 'POST') {
     try {
       if (!isAllowedOrigin(origin, url.origin)) {
-        return jsonResponse({ error: 'Forbidden' }, 403, origin);
+        return jsonResponse({ error: 'Forbidden' }, 403);
       }
 
       const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
@@ -47,7 +47,13 @@ async function handleAPI(request, env, url) {
         return jsonResponse({ error: 'Payload too large' }, 413, origin);
       }
 
-      const data = await request.json();
+      let data;
+      try {
+        data = await request.json();
+      } catch (e) {
+        return jsonResponse({ error: 'Invalid JSON' }, 400, origin);
+      }
+
       const validated = validateSnapshot(data);
       
       if (!validated.valid) {
@@ -90,7 +96,7 @@ async function handleAPI(request, env, url) {
     return handleCORS(request);
   }
 
-  return jsonResponse({ error: 'Not found' }, 404, origin);
+  return jsonResponse({ error: 'Not found' }, 404);
 }
 
 function isAllowedOrigin(origin, requestOrigin) {
@@ -126,8 +132,14 @@ function isValidPosition(pos) {
   if (typeof pos !== 'object' || pos === null) {
     return false;
   }
-  const { x, y, color } = pos;
+  const { x, y, color, rotation } = pos;
   if (typeof x !== 'number' || typeof y !== 'number' || !isValidHexColor(color)) {
+    return false;
+  }
+  if (!Number.isFinite(x) || !Number.isFinite(y) || x < -10000 || x > 10000 || y < -10000 || y > 10000) {
+    return false;
+  }
+  if (rotation !== undefined && (typeof rotation !== 'number' || !Number.isFinite(rotation))) {
     return false;
   }
   return true;
@@ -216,7 +228,7 @@ async function checkRateLimit(env, clientIP) {
 function jsonResponse(data, status = 200, origin = null) {
   const headers = { 'Content-Type': 'application/json' };
   
-  if (origin && isAllowedOrigin(origin, origin)) {
+  if (origin) {
     headers['Access-Control-Allow-Origin'] = origin;
     headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
   }
