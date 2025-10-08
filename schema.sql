@@ -4,9 +4,10 @@ CREATE TABLE color_snapshots (
   colors TEXT NOT NULL,
   positions TEXT NOT NULL,
   device_type TEXT NOT NULL,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  user_agent TEXT,
+  referer TEXT
 );
 
 CREATE INDEX idx_user_id ON color_snapshots(user_id);
 CREATE INDEX idx_created_at ON color_snapshots(created_at);
-
