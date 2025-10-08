@@ -1,5 +1,14 @@
-const RATE_LIMIT = { requests: 2, window: 1000 };
+const RATE_LIMIT = { 
+  requests: 3, 
+  window: 60000,
+  dailyLimit: 50
+};
 const MAX_PAYLOAD_SIZE = 10240;
+const ALLOWED_ORIGINS = [
+  'https://color.pages.dev',
+  'http://localhost:5173',
+  'http://localhost:4173'
+];
 
 export default {
   async fetch(request, env) {
@@ -20,26 +29,40 @@ export default {
 };
 
 async function handleAPI(request, env, url) {
+  const origin = request.headers.get('Origin');
+  
   if (url.pathname === '/api/snapshots' && request.method === 'POST') {
     try {
+      if (!isAllowedOrigin(origin, url.origin)) {
+        return jsonResponse({ error: 'Forbidden' }, 403, origin);
+      }
+
       const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
       const userAgent = request.headers.get('User-Agent') || 'unknown';
       const referer = request.headers.get('Referer') || 'unknown';
 
+      if (clientIP === 'unknown' || userAgent === 'unknown') {
+        return jsonResponse({ error: 'Invalid request' }, 400, origin);
+      }
+
       const contentLength = request.headers.get('content-length');
       if (contentLength && parseInt(contentLength) > MAX_PAYLOAD_SIZE) {
-        return jsonResponse({ error: 'Payload too large' }, 413);
+        return jsonResponse({ error: 'Payload too large' }, 413, origin);
       }
 
       const data = await request.json();
       const validated = validateSnapshot(data);
       
       if (!validated.valid) {
-        return jsonResponse({ error: validated.error }, 400);
+        return jsonResponse({ error: validated.error }, 400, origin);
       }
 
-      if (!(await checkRateLimit(env, clientIP))) {
-        return jsonResponse({ error: 'Rate limit exceeded' }, 429);
+      const rateLimitCheck = await checkRateLimit(env, clientIP);
+      if (!rateLimitCheck.allowed) {
+        return jsonResponse({ 
+          error: 'Rate limit exceeded',
+          retryAfter: rateLimitCheck.retryAfter 
+        }, 429, origin);
       }
 
       const newId = crypto.randomUUID();
@@ -59,14 +82,40 @@ async function handleAPI(request, env, url) {
         referer
       ).run();
 
-      return jsonResponse({ success: true, id: newId });
+      return jsonResponse({ success: true, id: newId }, 200, origin);
     } catch (error) {
       console.error('API error:', error);
-      return jsonResponse({ error: 'Internal server error' }, 500);
+      return jsonResponse({ error: 'Internal server error' }, 500, origin);
     }
   }
 
-  return jsonResponse({ error: 'Not found' }, 404);
+  if (request.method === 'OPTIONS') {
+    return handleCORS(request);
+  }
+
+  return jsonResponse({ error: 'Not found' }, 404, origin);
+}
+
+function isAllowedOrigin(origin, requestOrigin) {
+  if (!origin) return false;
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  if (origin === requestOrigin) return true;
+  return false;
+}
+
+function handleCORS(request) {
+  const origin = request.headers.get('Origin');
+  const headers = {
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '86400'
+  };
+  
+  if (isAllowedOrigin(origin, new URL(request.url).origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+  }
+  
+  return new Response(null, { status: 204, headers });
 }
 
 function isValidHexColor(hex) {
@@ -137,16 +186,41 @@ function validateSnapshot(data) {
 async function checkRateLimit(env, clientIP) {
   const now = Date.now();
   const windowStart = new Date(now - RATE_LIMIT.window).toISOString();
-  const stored = await env.DB.prepare('SELECT created_at FROM color_snapshots WHERE client_ip = ? AND created_at > ?')
-    .bind(clientIP, windowStart)
-    .all();
+  const dayStart = new Date(now - 86400000).toISOString();
   
-  return stored.results.length < RATE_LIMIT.requests;
+  const [recentRequests, dailyRequests] = await Promise.all([
+    env.DB.prepare('SELECT COUNT(*) as count FROM color_snapshots WHERE client_ip = ? AND created_at > ?')
+      .bind(clientIP, windowStart)
+      .first(),
+    env.DB.prepare('SELECT COUNT(*) as count FROM color_snapshots WHERE client_ip = ? AND created_at > ?')
+      .bind(clientIP, dayStart)
+      .first()
+  ]);
+  
+  if (dailyRequests.count >= RATE_LIMIT.dailyLimit) {
+    return { 
+      allowed: false, 
+      retryAfter: Math.ceil((86400000 - (now - new Date(dayStart).getTime())) / 1000)
+    };
+  }
+  
+  if (recentRequests.count >= RATE_LIMIT.requests) {
+    return { 
+      allowed: false, 
+      retryAfter: Math.ceil(RATE_LIMIT.window / 1000)
+    };
+  }
+  
+  return { allowed: true };
 }
 
-function jsonResponse(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json' }
-  });
+function jsonResponse(data, status = 200, origin = null) {
+  const headers = { 'Content-Type': 'application/json' };
+  
+  if (origin && isAllowedOrigin(origin, origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+    headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS';
+  }
+  
+  return new Response(JSON.stringify(data), { status, headers });
 }
