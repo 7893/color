@@ -23,6 +23,8 @@ async function handleAPI(request, env, url) {
   if (url.pathname === '/api/snapshots' && request.method === 'POST') {
     try {
       const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
+      const userAgent = request.headers.get('User-Agent') || 'unknown';
+      const referer = request.headers.get('Referer') || 'unknown';
 
       const contentLength = request.headers.get('content-length');
       if (contentLength && parseInt(contentLength) > MAX_PAYLOAD_SIZE) {
@@ -42,18 +44,23 @@ async function handleAPI(request, env, url) {
         return jsonResponse({ error: 'Rate limit exceeded' }, 429);
       }
 
+      const newId = crypto.randomUUID();
+      const createdAt = new Date().toISOString();
+
       await env.DB.prepare(
-        'INSERT INTO color_snapshots (id, user_id, colors, positions, device_type, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO color_snapshots (id, user_id, colors, positions, device_type, created_at, user_agent, referer) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
       ).bind(
-        validated.data.id,
+        newId,
         validated.data.userId,
         validated.data.colors,
         validated.data.positions,
         validated.data.deviceType,
-        validated.data.createdAt
+        createdAt,
+        userAgent,
+        referer
       ).run();
 
-      return jsonResponse({ success: true, id: validated.data.id });
+      return jsonResponse({ success: true, id: newId });
     } catch (error) {
       console.error('API error:', error);
       return jsonResponse({ error: 'Internal server error' }, 500);
@@ -68,11 +75,7 @@ function validateSnapshot(data) {
     return { valid: false, error: 'Invalid data format' };
   }
 
-  const { id, userId, colors, positions, deviceType, createdAt } = data;
-
-  if (!id || typeof id !== 'string' || id.length > 100) {
-    return { valid: false, error: 'Invalid id' };
-  }
+  const { userId, colors, positions, deviceType } = data;
 
   if (!userId || typeof userId !== 'string' || userId.length > 100) {
     return { valid: false, error: 'Invalid userId' };
@@ -90,13 +93,9 @@ function validateSnapshot(data) {
     return { valid: false, error: 'Invalid deviceType' };
   }
 
-  if (!createdAt || typeof createdAt !== 'string' || isNaN(Date.parse(createdAt))) {
-    return { valid: false, error: 'Invalid createdAt' };
-  }
-
   return {
     valid: true,
-    data: { id, userId, colors, positions, deviceType, createdAt }
+    data: { userId, colors, positions, deviceType }
   };
 }
 
