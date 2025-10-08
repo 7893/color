@@ -56,7 +56,8 @@ export class PaletteApp {
     selectedColors.forEach((colorItem, index) => {
       const swatch = this.createSwatchElement(colorItem, layout, index);
       this.container.appendChild(swatch);
-      const position = this.animateIn(swatch, layout);
+      const target = this.computeTargetPosition(index, layout);
+      const position = this.animateIn(swatch, layout, target);
       positions.push({ ...position, color: colorItem.hex });
     });
 
@@ -116,6 +117,52 @@ export class PaletteApp {
     });
   }
 
+  getHaltonValue(index, base) {
+    let result = 0;
+    let f = 1;
+    let i = index + 1;
+    while (i > 0) {
+      f /= base;
+      result += f * (i % base);
+      i = Math.floor(i / base);
+    }
+    return result;
+  }
+
+  pseudoRandom(index, offset = 0) {
+    const seed = (index + 1) * 12.9898 + offset * 78.233;
+    const value = Math.sin(seed) * 43758.5453;
+    return value - Math.floor(value);
+  }
+
+  computeTargetPosition(index, layout) {
+    const normX = this.getHaltonValue(index, 2);
+    const normY = this.getHaltonValue(index, 3);
+
+    const marginX = Math.min(layout.size * 0.4, layout.width * 0.08);
+    const marginY = Math.min(layout.size * 0.4, layout.height * 0.08);
+
+    const usableWidth = Math.max(layout.width - 2 * marginX, layout.size);
+    const usableHeight = Math.max(layout.height - 2 * marginY, layout.size);
+
+    const maxLeft = marginX + Math.max(usableWidth - layout.size, 0);
+    const maxTop = marginY + Math.max(usableHeight - layout.size, 0);
+
+    const jitterXRange = Math.min(layout.size * 0.2, Math.max(usableWidth - layout.size, 0) * 0.5);
+    const jitterYRange = Math.min(layout.size * 0.2, Math.max(usableHeight - layout.size, 0) * 0.5);
+
+    let left = marginX + normX * Math.max(usableWidth - layout.size, 0);
+    let top = marginY + normY * Math.max(usableHeight - layout.size, 0);
+
+    left += (this.pseudoRandom(index, 1) - 0.5) * 2 * jitterXRange;
+    top += (this.pseudoRandom(index, 2) - 0.5) * 2 * jitterYRange;
+
+    left = Math.min(Math.max(left, marginX), maxLeft);
+    top = Math.min(Math.max(top, marginY), maxTop);
+
+    return { x: left, y: top };
+  }
+
   calculateLayoutParameters() {
     const { width, height } = this.container.getBoundingClientRect();
     const area = width * height;
@@ -172,7 +219,7 @@ export class PaletteApp {
     });
   }
 
-  animateIn(swatch, layout) {
+  animateIn(swatch, layout, target) {
     const rotation = Math.random() * 360;
     const initialScale = 0.1;
     const initialX = Math.random() * layout.width;
@@ -183,53 +230,13 @@ export class PaletteApp {
     const initialTransform = `translate3d(${initialX}px, ${initialY}px, 0) scale(${initialScale}) rotate(${rotation}deg)`;
     swatch.style.transform = initialTransform;
 
-    const baseMargin = Math.min(
-      layout.size * 0.5,
-      layout.width * 0.1,
-      layout.height * 0.1
-    );
-    const marginX = Math.min(baseMargin, Math.max(0, (layout.width - layout.size) / 2));
-    const marginY = Math.min(baseMargin, Math.max(0, (layout.height - layout.size) / 2));
-
-    const minCenterX = marginX + layout.size / 2;
-    const maxCenterX = layout.width - marginX - layout.size / 2;
-    const minCenterY = marginY + layout.size / 2;
-    const maxCenterY = layout.height - marginY - layout.size / 2;
-
-    const jitterX = Math.min(layout.size * 0.25, layout.width * 0.1);
-    const jitterY = Math.min(layout.size * 0.25, layout.height * 0.1);
-
-    const chooseCenter = (min, max, fallback, jitter) => {
-      if (max > min) {
-        return min + Math.random() * (max - min);
-      }
-      const offset = (Math.random() - 0.5) * jitter;
-      return fallback + offset;
-    };
-
-    const centerX = chooseCenter(minCenterX, maxCenterX, layout.width / 2, jitterX);
-    const centerY = chooseCenter(minCenterY, maxCenterY, layout.height / 2, jitterY);
-
-    const clampedCenterX = Math.min(
-      Math.max(centerX, layout.size / 2),
-      Math.max(layout.size / 2, layout.width - layout.size / 2)
-    );
-
-    const clampedCenterY = Math.min(
-      Math.max(centerY, layout.size / 2),
-      Math.max(layout.size / 2, layout.height - layout.size / 2)
-    );
-
-    const finalX = clampedCenterX - layout.size / 2;
-    const finalY = clampedCenterY - layout.size / 2;
-
-    const restingTransform = `translate3d(${finalX}px, ${finalY}px, 0) scale(1) rotate(${rotation}deg)`;
+    const restingTransform = `translate3d(${target.x}px, ${target.y}px, 0) scale(1) rotate(${rotation}deg)`;
 
     requestAnimationFrame(() => {
       swatch.style.transform = restingTransform;
       swatch.style.opacity = '1';
     });
 
-    return { x: finalX, y: finalY, rotation };
+    return { x: target.x, y: target.y, rotation };
   }
 }
