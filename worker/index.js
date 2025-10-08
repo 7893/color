@@ -1,7 +1,8 @@
 const RATE_LIMIT = { 
   requests: 3, 
   window: 1000,
-  dailyLimit: 1000
+  dailyLimit: 1000,
+  unknownIPDailyLimit: 10000
 };
 const MAX_PAYLOAD_SIZE = 10240;
 const ALLOWED_ORIGINS = [
@@ -40,10 +41,6 @@ async function handleAPI(request, env, url) {
       const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
       const userAgent = request.headers.get('User-Agent') || 'unknown';
       const referer = request.headers.get('Referer') || 'unknown';
-
-      if (clientIP === 'unknown' || userAgent === 'unknown') {
-        return jsonResponse({ error: 'Invalid request' }, 400, origin);
-      }
 
       const contentLength = request.headers.get('content-length');
       if (contentLength && parseInt(contentLength) > MAX_PAYLOAD_SIZE) {
@@ -188,6 +185,8 @@ async function checkRateLimit(env, clientIP) {
   const windowStart = new Date(now - RATE_LIMIT.window).toISOString();
   const dayStart = new Date(now - 86400000).toISOString();
   
+  const dailyLimit = clientIP === 'unknown' ? RATE_LIMIT.unknownIPDailyLimit : RATE_LIMIT.dailyLimit;
+  
   const [recentRequests, dailyRequests] = await Promise.all([
     env.DB.prepare('SELECT COUNT(*) as count FROM color_snapshots WHERE client_ip = ? AND created_at > ?')
       .bind(clientIP, windowStart)
@@ -197,7 +196,7 @@ async function checkRateLimit(env, clientIP) {
       .first()
   ]);
   
-  if (dailyRequests.count >= RATE_LIMIT.dailyLimit) {
+  if (dailyRequests.count >= dailyLimit) {
     return { 
       allowed: false, 
       retryAfter: Math.ceil((86400000 - (now - new Date(dayStart).getTime())) / 1000)
