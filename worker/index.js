@@ -38,7 +38,7 @@ async function handleAPI(request, env, url) {
         return jsonResponse({ error: validated.error }, 400);
       }
 
-      const rateLimitKey = validated.data.userId || clientIP;
+      const rateLimitKey = clientIP;
 
       if (!(await checkRateLimit(env, rateLimitKey))) {
         return jsonResponse({ error: 'Rate limit exceeded' }, 429);
@@ -70,6 +70,24 @@ async function handleAPI(request, env, url) {
   return jsonResponse({ error: 'Not found' }, 404);
 }
 
+function isValidHexColor(hex) {
+  if (typeof hex !== 'string' || !/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(hex)) {
+    return false;
+  }
+  return true;
+}
+
+function isValidPosition(pos) {
+  if (typeof pos !== 'object' || pos === null) {
+    return false;
+  }
+  const { x, y, color } = pos;
+  if (typeof x !== 'number' || typeof y !== 'number' || !isValidHexColor(color)) {
+    return false;
+  }
+  return true;
+}
+
 function validateSnapshot(data) {
   if (!data || typeof data !== 'object') {
     return { valid: false, error: 'Invalid data format' };
@@ -84,18 +102,32 @@ function validateSnapshot(data) {
   if (!colors || typeof colors !== 'string' || colors.length > 2000) {
     return { valid: false, error: 'Invalid colors' };
   }
+  let parsedColors;
+  try {
+    parsedColors = JSON.parse(colors);
+    if (!Array.isArray(parsedColors) || !parsedColors.every(isValidHexColor)) {
+      return { valid: false, error: 'Invalid colors array format or content' };
+    }
+  } catch (e) {
+    return { valid: false, error: 'Colors is not a valid JSON array' };
+  }
 
   if (!positions || typeof positions !== 'string' || positions.length > 5000) {
     return { valid: false, error: 'Invalid positions' };
   }
-
-  if (!deviceType || typeof deviceType !== 'string' || deviceType.length > 50) {
-    return { valid: false, error: 'Invalid deviceType' };
+  let parsedPositions;
+  try {
+    parsedPositions = JSON.parse(positions);
+    if (!Array.isArray(parsedPositions) || !parsedPositions.every(isValidPosition)) {
+      return { valid: false, error: 'Invalid positions array format or content' };
+    }
+  } catch (e) {
+    return { valid: false, error: 'Positions is not a valid JSON array' };
   }
 
   return {
     valid: true,
-    data: { userId, colors, positions, deviceType }
+    data: { userId, colors: JSON.stringify(parsedColors), positions: JSON.stringify(parsedPositions), deviceType }
   };
 }
 
