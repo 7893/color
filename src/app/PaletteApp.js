@@ -139,26 +139,36 @@ export class PaletteApp {
     const normX = this.getHaltonValue(index, 2);
     const normY = this.getHaltonValue(index, 3);
 
-    const marginX = Math.min(layout.size * 0.4, layout.width * 0.08);
-    const marginY = Math.min(layout.size * 0.4, layout.height * 0.08);
+    const baseMarginX = Math.min(layout.width * 0.05, 40);
+    const baseMarginY = Math.min(layout.height * 0.05, 40);
 
-    const usableWidth = Math.max(layout.width - 2 * marginX, layout.size);
-    const usableHeight = Math.max(layout.height - 2 * marginY, layout.size);
+    let marginX = Math.max(baseMarginX, layout.size * 0.08);
+    let marginY = Math.max(baseMarginY, layout.size * 0.08);
 
-    const maxLeft = marginX + Math.max(usableWidth - layout.size, 0);
-    const maxTop = marginY + Math.max(usableHeight - layout.size, 0);
+    if (layout.width < layout.size + marginX * 2) {
+      marginX = Math.max((layout.width - layout.size) / 2, 0);
+    }
+    if (layout.height < layout.size + marginY * 2) {
+      marginY = Math.max((layout.height - layout.size) / 2, 0);
+    }
 
-    const jitterXRange = Math.min(layout.size * 0.2, Math.max(usableWidth - layout.size, 0) * 0.5);
-    const jitterYRange = Math.min(layout.size * 0.2, Math.max(usableHeight - layout.size, 0) * 0.5);
+    const usableWidth = Math.max(layout.width - 2 * marginX - layout.size, 0);
+    const usableHeight = Math.max(layout.height - 2 * marginY - layout.size, 0);
 
-    let left = marginX + normX * Math.max(usableWidth - layout.size, 0);
-    let top = marginY + normY * Math.max(usableHeight - layout.size, 0);
+    const jitterXRange = Math.min(layout.size * 0.2, usableWidth * 0.5);
+    const jitterYRange = Math.min(layout.size * 0.2, usableHeight * 0.5);
+
+    let left = marginX + normX * usableWidth;
+    let top = marginY + normY * usableHeight;
 
     left += (this.pseudoRandom(index, 1) - 0.5) * 2 * jitterXRange;
     top += (this.pseudoRandom(index, 2) - 0.5) * 2 * jitterYRange;
 
-    left = Math.min(Math.max(left, marginX), maxLeft);
-    top = Math.min(Math.max(top, marginY), maxTop);
+    const maxLeft = layout.width - layout.size - marginX;
+    const maxTop = layout.height - layout.size - marginY;
+
+    left = Math.min(Math.max(left, marginX), Math.max(marginX, maxLeft));
+    top = Math.min(Math.max(top, marginY), Math.max(marginY, maxTop));
 
     return { x: left, y: top };
   }
