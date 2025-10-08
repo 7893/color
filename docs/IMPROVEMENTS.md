@@ -8,6 +8,7 @@ The project uses multiple hardware acceleration techniques:
 - `will-change` properties for transform and opacity
 - `backface-visibility: hidden` to prevent flickering
 - WebGL context with `powerPreference: 'high-performance'`
+- Real-time fragment shader pipeline rendering animated backgrounds that react to palette data
 
 ## 2. Git Ignore Configuration ✅
 **Changes**: Comprehensive .gitignore file
@@ -77,6 +78,7 @@ Features:
 - DEPLOYMENT.md with deployment guide
 - CHECKLIST.md for quality assurance
 - IMPROVEMENTS.md (this file)
+- Updated WebGL documentation to reflect dynamic shader-driven background
 
 ### Configuration
 - Vite configuration for optimal builds

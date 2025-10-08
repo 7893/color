@@ -1,4 +1,17 @@
-export async function saveSnapshot(snapshot) {
+export async function saveSnapshot(snapshot, options = {}) {
+  const preferBeacon = Boolean(
+    options.preferBeacon &&
+    typeof navigator !== 'undefined' &&
+    typeof navigator.sendBeacon === 'function'
+  );
+
+  if (preferBeacon) {
+    const body = JSON.stringify(snapshot);
+    if (navigator.sendBeacon('/api/snapshots', body)) {
+      return { success: true, id: snapshot.id, queued: true };
+    }
+  }
+
   try {
     const response = await fetch('/api/snapshots', {
       method: 'POST',
