@@ -21,27 +21,12 @@ uniform int u_colorCount;
 uniform vec3 u_colors[${MAX_COLORS}];
 uniform float u_parallax;
 
-float hash(vec2 p) {
-  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
-}
-
-float smoothNoise(vec2 p) {
-  vec2 i = floor(p);
-  vec2 f = fract(p);
-  float a = hash(i);
-  float b = hash(i + vec2(1.0, 0.0));
-  float c = hash(i + vec2(0.0, 1.0));
-  float d = hash(i + vec2(1.0, 1.0));
-  vec2 u = f * f * (3.0 - 2.0 * f);
-  return mix(a, b, u.x) + (c - a) * u.y * (1.0 - u.x) + (d - b) * u.x * u.y;
-}
-
 void main() {
   vec2 uv = v_uv;
-  vec2 centered = (uv - 0.5) * 2.0;
-  float time = u_time * 0.25;
-
-  vec3 accum = vec3(${CLEAR_COLOR[0]}, ${CLEAR_COLOR[1]}, ${CLEAR_COLOR[2]});
+  vec2 centered = uv - 0.5;
+  float time = u_time * 0.05;
+  vec3 base = vec3(${CLEAR_COLOR[0]}, ${CLEAR_COLOR[1]}, ${CLEAR_COLOR[2]});
+  vec3 accum = base;
   float totalWeight = 1.0;
 
   for (int i = 0; i < ${MAX_COLORS}; i++) {
@@ -50,26 +35,20 @@ void main() {
     }
 
     float idx = float(i);
-    vec2 swirl = vec2(
-      sin(idx * 2.1 + time * 1.3),
-      cos(idx * 1.7 - time * 1.1)
+    vec2 offset = vec2(
+      sin(time + idx * 1.7) * 0.15,
+      cos(time * 0.8 + idx * 1.3) * 0.15
     );
-
-    vec2 flow = centered + swirl * u_parallax;
-    float wave = sin(dot(flow, swirl) * 3.14159 + time * 2.0);
-    float radial = smoothstep(1.15, 0.15, length(centered + swirl * 0.25));
-    float weight = clamp(0.45 + 0.55 * wave, 0.05, 1.0) * radial;
+    vec2 flow = centered + offset * (0.4 + u_parallax * 0.2);
+    float bands = sin((flow.x * 3.14159) + idx * 0.7 + time * 0.6);
+    float mask = smoothstep(0.55, 0.0, length(flow));
+    float weight = mix(0.08, 0.35, (bands * 0.5 + 0.5)) * mask;
 
     accum += u_colors[i] * weight;
     totalWeight += weight;
   }
 
-  float grain = (smoothNoise(uv * u_resolution * 0.35 + time * 15.0) - 0.5) * 0.05;
-  vec3 color = accum / totalWeight;
-  color = mix(vec3(${CLEAR_COLOR[0]}, ${CLEAR_COLOR[1]}, ${CLEAR_COLOR[2]}), color, 0.85);
-  color += grain;
-  color = clamp(color, 0.0, 1.0);
-
+  vec3 color = mix(base, accum / totalWeight, 0.5);
   gl_FragColor = vec4(color, 1.0);
 }
 `;
@@ -206,7 +185,8 @@ export function initGL() {
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.uniform1f(uniformLocations.time, timestamp * 0.001);
     gl.uniform2f(uniformLocations.resolution, canvas.width, canvas.height);
-    gl.uniform1f(uniformLocations.parallax, Math.min(1, colorCount / MAX_COLORS));
+    const parallaxStrength = Math.min(0.6, (colorCount / MAX_COLORS) * 0.5);
+    gl.uniform1f(uniformLocations.parallax, parallaxStrength);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     frameId = window.requestAnimationFrame(render);
   };
