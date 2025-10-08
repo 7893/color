@@ -11,3 +11,6 @@ database_id = "39598343-0990-452e-a58e-be2a00a9470c"
 
 [build]
 command = "pnpm build"
+
+[vars]
+ALLOWED_ORIGINS = "https://color.pages.dev,http://localhost:5173,http://localhost:4173"
