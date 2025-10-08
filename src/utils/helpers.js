@@ -7,6 +7,13 @@ export function getTextColorClass(hex) {
 }
 
 export function pickRandomColors(list, count) {
-  const shuffled = [...list].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, Math.min(count, list.length));
+  const pool = [...list];
+  const limit = Math.min(count, pool.length);
+
+  for (let i = pool.length - 1; i > 0; i--) {
+    const swapIndex = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[swapIndex]] = [pool[swapIndex], pool[i]];
+  }
+
+  return pool.slice(0, limit);
 }

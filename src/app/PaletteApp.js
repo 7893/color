@@ -13,6 +13,8 @@ export class PaletteApp {
     this.highestZIndex = 0;
     this.resizeTimer = null;
     this.currentSnapshot = null;
+    this.lastLayout = null;
+    this.paletteListeners = [];
     this.userId = this.getUserId();
     this.init();
   }
@@ -39,7 +41,7 @@ export class PaletteApp {
 
     window.addEventListener('beforeunload', () => {
       if (this.currentSnapshot) {
-        this.saveSnapshot();
+        this.saveSnapshot({ preferBeacon: true });
       }
     });
   }
@@ -63,9 +65,11 @@ export class PaletteApp {
       positions,
       deviceType: layout.width > 1024 ? 'desktop' : layout.width > 768 ? 'tablet' : 'mobile'
     };
+    this.lastLayout = layout;
+    this.notifyPaletteUpdate(this.currentSnapshot.colors, layout);
   }
 
-  async saveSnapshot() {
+  async saveSnapshot(options = {}) {
     if (!this.currentSnapshot) return;
     
     const snapshot = {
@@ -77,7 +81,39 @@ export class PaletteApp {
       createdAt: new Date().toISOString()
     };
 
+    if (options.preferBeacon) {
+      saveSnapshot(snapshot, { preferBeacon: true });
+      return;
+    }
+
     await saveSnapshot(snapshot);
+  }
+
+  onPaletteUpdate(callback) {
+    if (typeof callback === 'function') {
+      this.paletteListeners.push(callback);
+      if (this.currentSnapshot && this.lastLayout) {
+        callback({
+          colors: [...this.currentSnapshot.colors],
+          layout: { ...this.lastLayout }
+        });
+      }
+    }
+  }
+
+  notifyPaletteUpdate(colorHexes, layout) {
+    const payload = {
+      colors: [...colorHexes],
+      layout: { ...layout }
+    };
+
+    this.paletteListeners.forEach(listener => {
+      try {
+        listener(payload);
+      } catch (error) {
+        console.error('Palette listener error:', error);
+      }
+    });
   }
 
   calculateLayoutParameters() {
