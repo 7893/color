@@ -5,11 +5,6 @@ const RATE_LIMIT = {
   unknownIPDailyLimit: 10000
 };
 const MAX_PAYLOAD_SIZE = 10240;
-const ALLOWED_ORIGINS = [
-  'https://color.pages.dev',
-  'http://localhost:5173',
-  'http://localhost:4173'
-];
 
 export default {
   async fetch(request, env) {
@@ -31,10 +26,12 @@ export default {
 
 async function handleAPI(request, env, url) {
   const origin = request.headers.get('Origin');
+  const allowedOrigins = env.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS.split(',') : [];
   
   if (url.pathname === '/api/snapshots' && request.method === 'POST') {
     try {
-      if (!isAllowedOrigin(origin, url.origin)) {
+      if (!isAllowedOrigin(origin, url.origin, allowedOrigins)) {
+        console.warn('Forbidden access attempt:', { origin, ip: request.headers.get('CF-Connecting-IP') });
         return jsonResponse({ error: 'Forbidden' }, 403);
       }
 
@@ -60,8 +57,9 @@ async function handleAPI(request, env, url) {
         return jsonResponse({ error: validated.error }, 400, origin);
       }
 
-      const rateLimitCheck = await checkRateLimit(env, clientIP);
+      const rateLimitCheck = await checkRateLimit(env, clientIP, userAgent);
       if (!rateLimitCheck.allowed) {
+        console.warn('Rate limit exceeded:', { ip: clientIP, ua: userAgent.substring(0, 50) });
         return jsonResponse({ 
           error: 'Rate limit exceeded',
           retryAfter: rateLimitCheck.retryAfter 
@@ -93,28 +91,29 @@ async function handleAPI(request, env, url) {
   }
 
   if (request.method === 'OPTIONS') {
-    return handleCORS(request);
+    return handleCORS(request, env);
   }
 
   return jsonResponse({ error: 'Not found' }, 404);
 }
 
-function isAllowedOrigin(origin, requestOrigin) {
+function isAllowedOrigin(origin, requestOrigin, allowedOrigins) {
   if (!origin) return false;
-  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  if (allowedOrigins.includes(origin)) return true;
   if (origin === requestOrigin) return true;
   return false;
 }
 
-function handleCORS(request) {
+function handleCORS(request, env) {
   const origin = request.headers.get('Origin');
+  const allowedOrigins = env.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS.split(',') : [];
   const headers = {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Max-Age': '86400'
   };
   
-  if (isAllowedOrigin(origin, new URL(request.url).origin)) {
+  if (isAllowedOrigin(origin, new URL(request.url).origin, allowedOrigins)) {
     headers['Access-Control-Allow-Origin'] = origin;
   }
   
@@ -192,20 +191,31 @@ function validateSnapshot(data) {
   };
 }
 
-async function checkRateLimit(env, clientIP) {
+async function checkRateLimit(env, clientIP, userAgent) {
   const now = Date.now();
   const windowStart = new Date(now - RATE_LIMIT.window).toISOString();
   const dayStart = new Date(now - 86400000).toISOString();
   
   const dailyLimit = clientIP === 'unknown' ? RATE_LIMIT.unknownIPDailyLimit : RATE_LIMIT.dailyLimit;
   
+  let recentQuery, dailyQuery;
+  
+  if (clientIP === 'unknown') {
+    const uaHash = userAgent.substring(0, 50);
+    recentQuery = env.DB.prepare('SELECT COUNT(*) as count FROM color_snapshots WHERE client_ip = ? AND user_agent = ? AND created_at > ?')
+      .bind(clientIP, uaHash, windowStart);
+    dailyQuery = env.DB.prepare('SELECT COUNT(*) as count FROM color_snapshots WHERE client_ip = ? AND user_agent = ? AND created_at > ?')
+      .bind(clientIP, uaHash, dayStart);
+  } else {
+    recentQuery = env.DB.prepare('SELECT COUNT(*) as count FROM color_snapshots WHERE client_ip = ? AND created_at > ?')
+      .bind(clientIP, windowStart);
+    dailyQuery = env.DB.prepare('SELECT COUNT(*) as count FROM color_snapshots WHERE client_ip = ? AND created_at > ?')
+      .bind(clientIP, dayStart);
+  }
+  
   const [recentRequests, dailyRequests] = await Promise.all([
-    env.DB.prepare('SELECT COUNT(*) as count FROM color_snapshots WHERE client_ip = ? AND created_at > ?')
-      .bind(clientIP, windowStart)
-      .first(),
-    env.DB.prepare('SELECT COUNT(*) as count FROM color_snapshots WHERE client_ip = ? AND created_at > ?')
-      .bind(clientIP, dayStart)
-      .first()
+    recentQuery.first(),
+    dailyQuery.first()
   ]);
   
   if (dailyRequests.count >= dailyLimit) {
