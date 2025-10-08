@@ -101,13 +101,6 @@ export class PaletteApp {
     }
   }
 
-  offPaletteUpdate(callback) {
-    const index = this.paletteListeners.indexOf(callback);
-    if (index > -1) {
-      this.paletteListeners.splice(index, 1);
-    }
-  }
-
   notifyPaletteUpdate(colorHexes, layout) {
     const payload = {
       colors: [...colorHexes],
@@ -151,11 +144,13 @@ export class PaletteApp {
     let marginX = Math.max(baseMarginX, layout.size * 0.08);
     let marginY = Math.max(baseMarginY, layout.size * 0.08);
 
+
+
     const usableWidth = Math.max(layout.width - 2 * marginX - layout.size, 0);
     const usableHeight = Math.max(layout.height - 2 * marginY - layout.size, 0);
 
-    const jitterXRange = usableWidth > 0 ? Math.min(layout.size * 0.2, usableWidth * 0.5) : 0;
-    const jitterYRange = usableHeight > 0 ? Math.min(layout.size * 0.2, usableHeight * 0.5) : 0;
+    const jitterXRange = Math.min(layout.size * 0.2, usableWidth * 0.5);
+    const jitterYRange = Math.min(layout.size * 0.2, usableHeight * 0.5);
 
     let left = marginX + normX * usableWidth;
     let top = marginY + normY * usableHeight;

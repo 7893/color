@@ -38,7 +38,9 @@ async function handleAPI(request, env, url) {
         return jsonResponse({ error: validated.error }, 400);
       }
 
-      if (!(await checkRateLimit(env, clientIP))) {
+      const rateLimitKey = clientIP;
+
+      if (!(await checkRateLimit(env, rateLimitKey))) {
         return jsonResponse({ error: 'Rate limit exceeded' }, 429);
       }
 
@@ -46,11 +48,10 @@ async function handleAPI(request, env, url) {
       const createdAt = new Date().toISOString();
 
       await env.DB.prepare(
-        'INSERT INTO color_snapshots (id, user_id, client_ip, colors, positions, device_type, created_at, user_agent, referer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO color_snapshots (id, user_id, colors, positions, device_type, created_at, user_agent, referer) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
       ).bind(
         newId,
         validated.data.userId,
-        clientIP,
         validated.data.colors,
         validated.data.positions,
         validated.data.deviceType,
@@ -94,12 +95,8 @@ function validateSnapshot(data) {
 
   const { userId, colors, positions, deviceType } = data;
 
-  if (!userId || typeof userId !== 'string' || userId.length > 100 || !/^user_\d+_[a-z0-9]+$/.test(userId)) {
+  if (!userId || typeof userId !== 'string' || userId.length > 100) {
     return { valid: false, error: 'Invalid userId' };
-  }
-
-  if (!deviceType || !['mobile', 'tablet', 'desktop'].includes(deviceType)) {
-    return { valid: false, error: 'Invalid deviceType' };
   }
 
   if (!colors || typeof colors !== 'string' || colors.length > 2000) {
@@ -108,7 +105,7 @@ function validateSnapshot(data) {
   let parsedColors;
   try {
     parsedColors = JSON.parse(colors);
-    if (!Array.isArray(parsedColors) || parsedColors.length === 0 || parsedColors.length > 50 || !parsedColors.every(isValidHexColor)) {
+    if (!Array.isArray(parsedColors) || !parsedColors.every(isValidHexColor)) {
       return { valid: false, error: 'Invalid colors array format or content' };
     }
   } catch (e) {
@@ -121,7 +118,7 @@ function validateSnapshot(data) {
   let parsedPositions;
   try {
     parsedPositions = JSON.parse(positions);
-    if (!Array.isArray(parsedPositions) || parsedPositions.length === 0 || parsedPositions.length > 50 || !parsedPositions.every(isValidPosition)) {
+    if (!Array.isArray(parsedPositions) || !parsedPositions.every(isValidPosition)) {
       return { valid: false, error: 'Invalid positions array format or content' };
     }
   } catch (e) {
@@ -134,11 +131,10 @@ function validateSnapshot(data) {
   };
 }
 
-async function checkRateLimit(env, clientIP) {
+async function checkRateLimit(env, userKey) {
   const now = Date.now();
-  const windowStart = new Date(now - RATE_LIMIT.window).toISOString();
-  const stored = await env.DB.prepare('SELECT created_at FROM color_snapshots WHERE client_ip = ? AND created_at > ?')
-    .bind(clientIP, windowStart)
+  const stored = await env.DB.prepare('SELECT created_at FROM color_snapshots WHERE user_id = ? AND created_at > ?')
+    .bind(userKey, new Date(now - RATE_LIMIT.window).toISOString())
     .all();
   
   return stored.results.length < RATE_LIMIT.requests;

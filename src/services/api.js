@@ -6,9 +6,9 @@ export async function saveSnapshot(snapshot, options = {}) {
   );
 
   if (preferBeacon) {
-    const blob = new Blob([JSON.stringify(snapshot)], { type: 'application/json' });
-    if (navigator.sendBeacon('/api/snapshots', blob)) {
-      return { success: true, queued: true };
+    const body = JSON.stringify(snapshot);
+    if (navigator.sendBeacon('/api/snapshots', body)) {
+      return { success: true, id: snapshot.id, queued: true };
     }
   }
 
