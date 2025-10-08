@@ -15,14 +15,27 @@ export default {
     }
 
     const response = await env.ASSETS.fetch(request);
-    if (response.status !== 404) return response;
+    
+    if (response.status !== 404) {
+      return addSecurityHeaders(response);
+    }
 
     const isAsset = url.pathname.includes('.') && !url.pathname.endsWith('.html');
     if (isAsset) return response;
 
-    return env.ASSETS.fetch(new Request(`${url.origin}/index.html`, request));
+    const htmlResponse = await env.ASSETS.fetch(new Request(`${url.origin}/index.html`, request));
+    return addSecurityHeaders(htmlResponse);
   },
 };
+
+function addSecurityHeaders(response) {
+  const newResponse = new Response(response.body, response);
+  newResponse.headers.set('X-Content-Type-Options', 'nosniff');
+  newResponse.headers.set('X-Frame-Options', 'DENY');
+  newResponse.headers.set('X-XSS-Protection', '1; mode=block');
+  newResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  return newResponse;
+}
 
 async function handleAPI(request, env, url) {
   const origin = request.headers.get('Origin');

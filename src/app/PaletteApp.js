@@ -26,12 +26,17 @@ export class PaletteApp {
   }
 
   getUserId() {
-    let userId = localStorage.getItem('color-user-id');
-    if (!userId) {
-      userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      localStorage.setItem('color-user-id', userId);
+    try {
+      let userId = localStorage.getItem('color-user-id');
+      if (!userId) {
+        userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('color-user-id', userId);
+      }
+      return userId;
+    } catch (error) {
+      console.warn('localStorage not available, using session-only ID:', error);
+      return `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
-    return userId;
   }
 
   attachGlobalListeners() {
