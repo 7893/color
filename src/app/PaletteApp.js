@@ -17,6 +17,7 @@ export class PaletteApp {
     this.paletteListeners = [];
     this.userId = this.getUserId();
     this.snapshotSaved = false;
+    this.randomSeed = Math.random() * 10000;
     this.init();
   }
 
@@ -54,6 +55,7 @@ export class PaletteApp {
 
   generateSwatches() {
     this.container.innerHTML = '';
+    this.randomSeed = Math.random() * 10000;
     const layout = this.calculateLayoutParameters();
     const selectedColors = pickRandomColors(this.colors, layout.swatchCount);
     this.highestZIndex = selectedColors.length;
@@ -148,14 +150,17 @@ export class PaletteApp {
   }
 
   pseudoRandom(index, offset = 0) {
-    const seed = (index + 1) * 12.9898 + offset * 78.233;
+    const seed = (index + 1) * 12.9898 + offset * 78.233 + this.randomSeed;
     const value = Math.sin(seed) * 43758.5453;
     return value - Math.floor(value);
   }
 
   computeTargetPosition(index, layout) {
-    const normX = this.getHaltonValue(index, 2);
-    const normY = this.getHaltonValue(index, 3);
+    const baseX = this.getHaltonValue(index, 2);
+    const baseY = this.getHaltonValue(index, 3);
+    
+    const normX = (baseX + this.pseudoRandom(index, 100)) % 1;
+    const normY = (baseY + this.pseudoRandom(index, 200)) % 1;
 
     const isMobile = layout.width <= 768;
     const baseMarginX = isMobile ? Math.min(layout.width * 0.03, 20) : Math.min(layout.width * 0.05, 40);
