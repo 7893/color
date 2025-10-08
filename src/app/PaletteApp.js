@@ -183,9 +183,26 @@ export class PaletteApp {
     const initialTransform = `translate3d(${initialX}px, ${initialY}px, 0) scale(${initialScale}) rotate(${rotation}deg)`;
     swatch.style.transform = initialTransform;
 
-    const margin = layout.size * 0.6;
-    const finalX = margin + Math.random() * (layout.width - 2 * margin) - layout.size / 2;
-    const finalY = margin + Math.random() * (layout.height - 2 * margin) - layout.size / 2;
+    const dynamicMargin = Math.min(
+      layout.size * 0.5,
+      layout.width * 0.1,
+      layout.height * 0.1
+    );
+
+    const minCenterX = dynamicMargin + layout.size / 2;
+    const maxCenterX = layout.width - dynamicMargin - layout.size / 2;
+    const minCenterY = dynamicMargin + layout.size / 2;
+    const maxCenterY = layout.height - dynamicMargin - layout.size / 2;
+
+    const centerX = maxCenterX > minCenterX
+      ? minCenterX + Math.random() * (maxCenterX - minCenterX)
+      : layout.width / 2;
+    const centerY = maxCenterY > minCenterY
+      ? minCenterY + Math.random() * (maxCenterY - minCenterY)
+      : layout.height / 2;
+
+    const finalX = centerX - layout.size / 2;
+    const finalY = centerY - layout.size / 2;
 
     const restingTransform = `translate3d(${finalX}px, ${finalY}px, 0) scale(1) rotate(${rotation}deg)`;
 
