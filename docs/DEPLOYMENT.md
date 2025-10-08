@@ -20,6 +20,8 @@ pnpm build
 wrangler deploy
 ```
 
+> Use the pnpm version available in your local environment; the project does not pin a specific release.
+
 ## Local Development
 
 ```bash

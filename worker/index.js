@@ -23,10 +23,6 @@ async function handleAPI(request, env, url) {
   if (url.pathname === '/api/snapshots' && request.method === 'POST') {
     try {
       const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
-      
-      if (!(await checkRateLimit(env, clientIP))) {
-        return jsonResponse({ error: 'Rate limit exceeded' }, 429);
-      }
 
       const contentLength = request.headers.get('content-length');
       if (contentLength && parseInt(contentLength) > MAX_PAYLOAD_SIZE) {
@@ -38,6 +34,12 @@ async function handleAPI(request, env, url) {
       
       if (!validated.valid) {
         return jsonResponse({ error: validated.error }, 400);
+      }
+
+      const rateLimitKey = validated.data.userId || clientIP;
+
+      if (!(await checkRateLimit(env, rateLimitKey))) {
+        return jsonResponse({ error: 'Rate limit exceeded' }, 429);
       }
 
       await env.DB.prepare(
@@ -98,11 +100,10 @@ function validateSnapshot(data) {
   };
 }
 
-async function checkRateLimit(env, clientIP) {
-  const key = `ratelimit:${clientIP}`;
+async function checkRateLimit(env, userKey) {
   const now = Date.now();
   const stored = await env.DB.prepare('SELECT created_at FROM color_snapshots WHERE user_id = ? AND created_at > ?')
-    .bind(clientIP, new Date(now - RATE_LIMIT.window).toISOString())
+    .bind(userKey, new Date(now - RATE_LIMIT.window).toISOString())
     .all();
   
   return stored.results.length < RATE_LIMIT.requests;
@@ -114,4 +115,3 @@ function jsonResponse(data, status = 200) {
     headers: { 'Content-Type': 'application/json' }
   });
 }
-

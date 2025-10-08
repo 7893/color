@@ -5,6 +5,16 @@ import { masterColorsList } from './data/colors.js';
 import { CONFIG } from './config/constants.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  initGL();
-  new PaletteApp('paletteContainer', CONFIG, masterColorsList);
+  const glHandle = initGL();
+  const app = new PaletteApp('paletteContainer', CONFIG, masterColorsList);
+
+  if (glHandle?.updatePaletteColors && typeof app?.onPaletteUpdate === 'function') {
+    app.onPaletteUpdate(({ colors }) => {
+      glHandle.updatePaletteColors(colors);
+    });
+  }
+
+  window.addEventListener('beforeunload', () => {
+    glHandle?.destroy?.();
+  });
 });
