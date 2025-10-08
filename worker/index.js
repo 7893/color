@@ -1,6 +1,6 @@
 const RATE_LIMIT = { 
   requests: 3, 
-  window: 60000,
+  window: 1000,
   dailyLimit: 50
 };
 const MAX_PAYLOAD_SIZE = 10240;
