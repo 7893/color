@@ -1,7 +1,7 @@
 const RATE_LIMIT = { 
   requests: 3, 
   window: 1000,
-  dailyLimit: 50
+  dailyLimit: 1000
 };
 const MAX_PAYLOAD_SIZE = 10240;
 const ALLOWED_ORIGINS = [
