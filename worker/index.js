@@ -26,6 +26,15 @@ export default {
     const htmlResponse = await env.ASSETS.fetch(new Request(`${url.origin}/index.html`, request));
     return addSecurityHeaders(htmlResponse);
   },
+
+  async scheduled(event, env, ctx) {
+    try {
+      await fetch('https://color.pages.dev/');
+      console.log('Scheduled health check completed');
+    } catch (error) {
+      console.error('Scheduled health check failed:', error);
+    }
+  },
 };
 
 function addSecurityHeaders(response) {
