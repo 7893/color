@@ -16,16 +16,29 @@ export default {
 
     // Auto-record page visit
     if (url.pathname === '/' || url.pathname === '/index.html') {
+      console.log('Page visit detected:', url.pathname);
       const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
       const userAgent = request.headers.get('User-Agent') || 'unknown';
       const userAgentHash = userAgent.substring(0, 50);
       
+      console.log('Client IP:', clientIP, 'UA:', userAgentHash);
+      
       // Check rate limit: max 3 records per second per IP
       const rateLimitCheck = await checkVisitRateLimit(env, clientIP, userAgentHash);
       
+      console.log('Rate limit check:', rateLimitCheck);
+      
       if (rateLimitCheck.allowed) {
-        // Record visit asynchronously (don't block response)
-        env.waitUntil(recordVisit(env, clientIP, userAgentHash, request));
+        // Record visit synchronously for testing
+        try {
+          console.log('Recording visit...');
+          await recordVisit(env, clientIP, userAgentHash, request);
+          console.log('Visit recorded successfully');
+        } catch (error) {
+          console.error('Failed to record visit:', error);
+        }
+      } else {
+        console.log('Rate limit exceeded, skipping record');
       }
     }
 
