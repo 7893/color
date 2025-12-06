@@ -23,22 +23,13 @@ export default {
       
       console.log('Client IP:', clientIP, 'UA:', userAgentHash);
       
-      // Check rate limit: max 3 records per second per IP
-      const rateLimitCheck = await checkVisitRateLimit(env, clientIP, userAgentHash);
-      
-      console.log('Rate limit check:', rateLimitCheck);
-      
-      if (rateLimitCheck.allowed) {
-        // Record visit synchronously for testing
-        try {
-          console.log('Recording visit...');
-          await recordVisit(env, clientIP, userAgentHash, request);
-          console.log('Visit recorded successfully');
-        } catch (error) {
-          console.error('Failed to record visit:', error);
-        }
-      } else {
-        console.log('Rate limit exceeded, skipping record');
+      // Record visit directly without rate limit for testing
+      try {
+        console.log('Recording visit...');
+        await recordVisit(env, clientIP, userAgentHash, request);
+        console.log('Visit recorded successfully');
+      } catch (error) {
+        console.error('Failed to record visit:', error);
       }
     }
 
