@@ -10,11 +10,14 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     
+    console.log('Request received:', url.pathname);
+    
     if (url.pathname.startsWith('/api/')) {
       return handleAPI(request, env, url);
     }
 
     // Auto-record page visit
+    console.log('Checking if should record:', url.pathname);
     if (url.pathname === '/' || url.pathname === '/index.html') {
       console.log('Page visit detected:', url.pathname);
       const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
