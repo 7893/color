@@ -10,30 +10,8 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     
-    console.log('Request:', request.method, url.pathname);
-    
     if (url.pathname.startsWith('/api/')) {
       return handleAPI(request, env, url);
-    }
-
-    // Auto-record page visit for HTML requests
-    const accept = request.headers.get('Accept') || '';
-    const isHTMLRequest = accept.includes('text/html');
-    
-    console.log('Accept header:', accept, 'isHTML:', isHTMLRequest);
-    
-    if (isHTMLRequest && (url.pathname === '/' || !url.pathname.includes('.'))) {
-      console.log('Recording HTML page visit');
-      const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
-      const userAgent = request.headers.get('User-Agent') || 'unknown';
-      const userAgentHash = userAgent.substring(0, 50);
-      
-      try {
-        await recordVisit(env, clientIP, userAgentHash, request);
-        console.log('Visit recorded');
-      } catch (error) {
-        console.error('Record failed:', error);
-      }
     }
 
     const response = await env.ASSETS.fetch(request);
@@ -281,69 +259,4 @@ function jsonResponse(data, status = 200, origin = null) {
   }
   
   return new Response(JSON.stringify(data), { status, headers });
-}
-
-async function checkVisitRateLimit(env, clientIP, userAgentHash) {
-  const now = Date.now();
-  const windowStart = new Date(now - 1000).toISOString(); // 1 second window
-  
-  const query = env.DB.prepare(
-    'SELECT COUNT(*) as count FROM color_snapshots WHERE client_ip = ? AND created_at > ?'
-  ).bind(clientIP, windowStart);
-  
-  const result = await query.first();
-  
-  if (result.count >= 3) {
-    return { allowed: false };
-  }
-  
-  return { allowed: true };
-}
-
-async function recordVisit(env, clientIP, userAgentHash, request) {
-  try {
-    const newId = crypto.randomUUID();
-    const createdAt = new Date().toISOString();
-    const referer = request.headers.get('Referer') || 'direct';
-    
-    // Generate random colors for auto-visit
-    const colors = generateRandomColors(25);
-    const positions = generateRandomPositions(colors);
-    
-    await env.DB.prepare(
-      'INSERT INTO color_snapshots (id, user_id, client_ip, colors, positions, device_type, created_at, user_agent, referer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    ).bind(
-      newId,
-      `auto_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      clientIP,
-      JSON.stringify(colors),
-      JSON.stringify(positions),
-      'desktop',
-      createdAt,
-      userAgentHash,
-      referer
-    ).run();
-  } catch (error) {
-    console.error('Failed to record visit:', error);
-  }
-}
-
-function generateRandomColors(count) {
-  const colors = [];
-  for (let i = 0; i < count; i++) {
-    const r = Math.floor(Math.random() * 256).toString(16).padStart(2, '0');
-    const g = Math.floor(Math.random() * 256).toString(16).padStart(2, '0');
-    const b = Math.floor(Math.random() * 256).toString(16).padStart(2, '0');
-    colors.push(`#${r}${g}${b}`);
-  }
-  return colors;
-}
-
-function generateRandomPositions(colors) {
-  return colors.map(color => ({
-    x: Math.random() * 1600,
-    y: Math.random() * 800,
-    rotation: Math.random() * 360,
-    color
-  }));
 }
