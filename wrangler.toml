@@ -14,3 +14,6 @@ command = "pnpm build"
 
 [vars]
 ALLOWED_ORIGINS = "https://color.pages.dev,http://localhost:5173,http://localhost:4173"
+
+[triggers]
+crons = ["0 */6 * * *"]
