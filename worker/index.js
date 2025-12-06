@@ -10,29 +10,29 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     
-    console.log('Request received:', url.pathname);
+    console.log('Request:', request.method, url.pathname);
     
     if (url.pathname.startsWith('/api/')) {
       return handleAPI(request, env, url);
     }
 
-    // Auto-record page visit
-    console.log('Checking if should record:', url.pathname);
-    if (url.pathname === '/' || url.pathname === '/index.html') {
-      console.log('Page visit detected:', url.pathname);
+    // Auto-record page visit for HTML requests
+    const accept = request.headers.get('Accept') || '';
+    const isHTMLRequest = accept.includes('text/html');
+    
+    console.log('Accept header:', accept, 'isHTML:', isHTMLRequest);
+    
+    if (isHTMLRequest && (url.pathname === '/' || !url.pathname.includes('.'))) {
+      console.log('Recording HTML page visit');
       const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
       const userAgent = request.headers.get('User-Agent') || 'unknown';
       const userAgentHash = userAgent.substring(0, 50);
       
-      console.log('Client IP:', clientIP, 'UA:', userAgentHash);
-      
-      // Record visit directly without rate limit for testing
       try {
-        console.log('Recording visit...');
         await recordVisit(env, clientIP, userAgentHash, request);
-        console.log('Visit recorded successfully');
+        console.log('Visit recorded');
       } catch (error) {
-        console.error('Failed to record visit:', error);
+        console.error('Record failed:', error);
       }
     }
 
