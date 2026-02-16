@@ -10,7 +10,7 @@
     "cf:dev": "wrangler dev --local --port 8787"
   },
   "devDependencies": {
-    "vite": "^7.1.11",
-    "wrangler": "^4.59.3"
+    "vite": "^7.3.1",
+    "wrangler": "^4.65.0"
   }
 }
