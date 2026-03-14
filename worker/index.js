@@ -21,15 +21,6 @@ export default {
     return addSecurityHeaders(htmlResponse);
   },
 
-  async scheduled(event, env, ctx) {
-    // 健康检查 ping 正确的域名
-    try {
-      await fetch('https://color.53.workers.dev/');
-      console.log('Scheduled health check completed');
-    } catch (error) {
-      console.error('Scheduled health check failed:', error);
-    }
-  },
 };
 
 function addSecurityHeaders(response) {
