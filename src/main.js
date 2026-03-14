@@ -3,6 +3,7 @@ import { PaletteApp } from './app/PaletteApp.js';
 import { initGL } from './utils/gl.js';
 import { masterColorsList } from './data/colors.js';
 import { CONFIG } from './config/constants.js';
+import { initTurnstile } from './services/api.js';
 
 function showError(message) {
   document.body.innerHTML = `
@@ -16,6 +17,13 @@ function showError(message) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Init Turnstile after scripts load
+  if (document.readyState === 'complete') {
+    initTurnstile();
+  } else {
+    window.addEventListener('load', initTurnstile);
+  }
+
   try {
     const glHandle = initGL();
     if (!glHandle) {

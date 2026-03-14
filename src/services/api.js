@@ -1,26 +1,27 @@
 const TURNSTILE_SITEKEY = '0x4AAAAAACq6aIKP_Uzb-Wij';
+let turnstileToken = null;
+let turnstileReady = false;
 
-function getTurnstileToken() {
-  return new Promise((resolve, reject) => {
-    if (typeof window.turnstile === 'undefined') {
-      resolve(null); // Turnstile not loaded, skip
-      return;
-    }
-    window.turnstile.render('#turnstile-widget', {
-      sitekey: TURNSTILE_SITEKEY,
-      callback: (token) => {
-        window.turnstile.remove('#turnstile-widget');
-        resolve(token);
-      },
-      'error-callback': () => resolve(null),
-      'expired-callback': () => resolve(null),
-    });
+export function initTurnstile() {
+  if (turnstileReady || typeof window.turnstile === 'undefined') return;
+  turnstileReady = true;
+  window.turnstile.render('#turnstile-widget', {
+    sitekey: TURNSTILE_SITEKEY,
+    callback: (token) => { turnstileToken = token; },
+    'expired-callback': () => { turnstileToken = null; },
+    'error-callback': () => { turnstileToken = null; },
   });
 }
 
-export async function saveSnapshot(snapshot, options = {}) {
-  const token = await getTurnstileToken();
+function getTurnstileToken() {
+  initTurnstile();
+  const token = turnstileToken;
+  turnstileToken = null; // consume once
+  return token;
+}
 
+export async function saveSnapshot(snapshot, options = {}) {
+  const token = getTurnstileToken();
   const payload = token ? { ...snapshot, cfTurnstileToken: token } : snapshot;
 
   const preferBeacon = Boolean(
