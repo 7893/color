@@ -66,6 +66,19 @@ async function handleAPI(request, env, url) {
         return jsonResponse({ error: validated.error }, 400, origin);
       }
 
+      // Verify Turnstile token
+      if (env.TURNSTILE_SECRET && data.cfTurnstileToken) {
+        const tsRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ secret: env.TURNSTILE_SECRET, response: data.cfTurnstileToken, remoteip: clientIP })
+        });
+        const tsData = await tsRes.json();
+        if (!tsData.success) {
+          return jsonResponse({ error: 'Verification failed' }, 403, origin);
+        }
+      }
+
       const rateLimitCheck = { allowed: true }; // Rate limiting handled by Cloudflare WAF
       if (!rateLimitCheck.allowed) {
         console.warn('Rate limit exceeded:', { ip: clientIP, ua: userAgentHash });
