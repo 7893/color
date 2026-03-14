@@ -105,6 +105,11 @@ async function handleAPI(request, env, url) {
         referer
       ).run();
 
+      // Rolling delete: keep max 1024 records
+      await env.DB.prepare(
+        'DELETE FROM color_snapshots WHERE id IN (SELECT id FROM color_snapshots ORDER BY created_at ASC LIMIT MAX(0, (SELECT COUNT(*) FROM color_snapshots) - 1024))'
+      ).run();
+
       return jsonResponse({ success: true, id: newId }, 200, origin);
     } catch (error) {
       console.error('API error:', error);
