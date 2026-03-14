@@ -13,7 +13,7 @@ database_id = "39598343-0990-452e-a58e-be2a00a9470c"
 command = "pnpm build"
 
 [vars]
-ALLOWED_ORIGINS = "https://color.pages.dev,http://localhost:5173,http://localhost:4173"
+ALLOWED_ORIGINS = "https://color.53.workers.dev,https://color.pages.dev,http://localhost:5173,http://localhost:4173"
 
 [triggers]
 crons = ["0 */6 * * *"]

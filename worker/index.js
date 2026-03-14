@@ -1,9 +1,3 @@
-const RATE_LIMIT = { 
-  requests: 3, 
-  window: 1000,
-  dailyLimit: 1000,
-  unknownIPDailyLimit: 10000
-};
 const MAX_PAYLOAD_SIZE = 10240;
 
 export default {
@@ -28,8 +22,9 @@ export default {
   },
 
   async scheduled(event, env, ctx) {
+    // 健康检查 ping 正确的域名
     try {
-      await fetch('https://color.pages.dev/');
+      await fetch('https://color.53.workers.dev/');
       console.log('Scheduled health check completed');
     } catch (error) {
       console.error('Scheduled health check failed:', error);
@@ -80,7 +75,7 @@ async function handleAPI(request, env, url) {
         return jsonResponse({ error: validated.error }, 400, origin);
       }
 
-      const rateLimitCheck = await checkRateLimit(env, clientIP, userAgentHash);
+      const rateLimitCheck = { allowed: true }; // Rate limiting handled by Cloudflare WAF
       if (!rateLimitCheck.allowed) {
         console.warn('Rate limit exceeded:', { ip: clientIP, ua: userAgentHash });
         return jsonResponse({ 
@@ -216,47 +211,6 @@ function validateSnapshot(data) {
     valid: true,
     data: { userId, colors: JSON.stringify(parsedColors), positions: JSON.stringify(parsedPositions), deviceType }
   };
-}
-
-async function checkRateLimit(env, clientIP, userAgentHash) {
-  const now = Date.now();
-  const windowStart = new Date(now - RATE_LIMIT.window).toISOString();
-  const dayStart = new Date(now - 86400000).toISOString();
-  
-  const dailyLimit = clientIP === 'unknown' ? RATE_LIMIT.unknownIPDailyLimit : RATE_LIMIT.dailyLimit;
-  
-  let recentQuery, dailyQuery;
-  
-  if (clientIP === 'unknown') {
-    recentQuery = env.DB.prepare('SELECT COUNT(*) as count FROM color_snapshots WHERE client_ip = ? AND user_agent = ? AND created_at > ?')
-      .bind(clientIP, userAgentHash, windowStart);
-    dailyQuery = env.DB.prepare('SELECT COUNT(*) as count FROM color_snapshots WHERE client_ip = ? AND user_agent = ? AND created_at > ?')
-      .bind(clientIP, userAgentHash, dayStart);
-  } else {
-    recentQuery = env.DB.prepare('SELECT COUNT(*) as count FROM color_snapshots WHERE client_ip = ? AND created_at > ?')
-      .bind(clientIP, windowStart);
-    dailyQuery = env.DB.prepare('SELECT COUNT(*) as count FROM color_snapshots WHERE client_ip = ? AND created_at > ?')
-      .bind(clientIP, dayStart);
-  }
-  
-  const [recentRequests, dailyRequests] = await Promise.all([
-    recentQuery.first(),
-    dailyQuery.first()
-  ]);
-  
-  if (dailyRequests.count >= dailyLimit) {
-    const retryAfter = Math.max(1, Math.ceil((86400000 - (now - new Date(dayStart).getTime())) / 1000));
-    return { allowed: false, retryAfter };
-  }
-  
-  if (recentRequests.count >= RATE_LIMIT.requests) {
-    return { 
-      allowed: false, 
-      retryAfter: Math.ceil(RATE_LIMIT.window / 1000)
-    };
-  }
-  
-  return { allowed: true };
 }
 
 function jsonResponse(data, status = 200, origin = null) {
