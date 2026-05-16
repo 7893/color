@@ -17,5 +17,12 @@
     "vite": "^8.0.8",
     "wrangler": "^4.83.0"
   },
-  "packageManager": "pnpm@11.1.2"
+  "packageManager": "pnpm@11.1.2",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "workerd"
+    ]
+  }
 }
