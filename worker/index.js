@@ -67,7 +67,10 @@ async function handleAPI(request, env, url) {
       }
 
       // Verify Turnstile token
-      if (env.TURNSTILE_SECRET && data.cfTurnstileToken) {
+      if (env.TURNSTILE_SECRET) {
+        if (!data.cfTurnstileToken) {
+          return jsonResponse({ error: 'Verification failed' }, 403, origin);
+        }
         const tsRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
