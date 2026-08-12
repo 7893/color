@@ -1,15 +1,22 @@
 const TURNSTILE_SITEKEY = '0x4AAAAAACq6aIKP_Uzb-Wij';
 let turnstileToken = null;
 let turnstileReady = false;
+let turnstileWidgetId = null;
 
 export function initTurnstile() {
   if (turnstileReady || typeof window.turnstile === 'undefined') return;
   turnstileReady = true;
-  window.turnstile.render('#turnstile-widget', {
+  turnstileWidgetId = window.turnstile.render('#turnstile-widget', {
     sitekey: TURNSTILE_SITEKEY,
     callback: (token) => { turnstileToken = token; },
-    'expired-callback': () => { turnstileToken = null; },
-    'error-callback': () => { turnstileToken = null; },
+    'expired-callback': () => { 
+      turnstileToken = null; 
+      if (turnstileWidgetId !== null) window.turnstile.reset(turnstileWidgetId);
+    },
+    'error-callback': () => { 
+      turnstileToken = null; 
+      if (turnstileWidgetId !== null) window.turnstile.reset(turnstileWidgetId);
+    },
   });
 }
 

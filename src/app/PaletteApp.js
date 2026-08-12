@@ -46,9 +46,17 @@ export class PaletteApp {
       this.resizeTimer = setTimeout(() => this.generateSwatches(), 250);
     });
 
-    window.addEventListener('beforeunload', () => {
+    const saveState = () => {
       if (this.currentSnapshot && !this.snapshotSaved) {
         this.saveSnapshot({ preferBeacon: true });
+      }
+    };
+
+    window.addEventListener('beforeunload', saveState);
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        saveState();
       }
     });
   }
