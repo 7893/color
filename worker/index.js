@@ -48,16 +48,22 @@ async function handleAPI(request, env, url) {
       const userAgentHash = userAgent.substring(0, 50);
       const referer = request.headers.get('Referer') || 'unknown';
 
-      const contentLength = request.headers.get('content-length');
-      if (contentLength && parseInt(contentLength) > MAX_PAYLOAD_SIZE) {
-        return jsonResponse({ error: 'Payload too large' }, 413, origin);
+      if (!env.TURNSTILE_SECRET || typeof env.SNAPSHOT_RATE_LIMITER?.limit !== 'function') {
+        return jsonResponse({ error: 'Snapshot protection is not configured' }, 503, origin);
+      }
+      try {
+        const { success } = await env.SNAPSHOT_RATE_LIMITER.limit({ key: clientIP });
+        if (!success) return jsonResponse({ error: 'Too many requests' }, 429, origin);
+      } catch {
+        return jsonResponse({ error: 'Snapshot protection is unavailable' }, 503, origin);
       }
 
       let data;
       try {
-        data = await request.json();
-      } catch (e) {
-        return jsonResponse({ error: 'Invalid JSON' }, 400, origin);
+        data = await readBoundedJson(request);
+      } catch (error) {
+        const tooLarge = error instanceof RangeError;
+        return jsonResponse({ error: tooLarge ? 'Payload too large' : 'Invalid JSON' }, tooLarge ? 413 : 400, origin);
       }
 
       const validated = validateSnapshot(data);
@@ -80,15 +86,6 @@ async function handleAPI(request, env, url) {
         if (!tsData.success) {
           return jsonResponse({ error: 'Verification failed' }, 403, origin);
         }
-      }
-
-      const rateLimitCheck = { allowed: true }; // Rate limiting handled by Cloudflare WAF
-      if (!rateLimitCheck.allowed) {
-        console.warn('Rate limit exceeded:', { ip: clientIP, ua: userAgentHash });
-        return jsonResponse({ 
-          error: 'Rate limit exceeded',
-          retryAfter: rateLimitCheck.retryAfter 
-        }, 429, origin);
       }
 
       const newId = crypto.randomUUID();
@@ -234,4 +231,32 @@ function jsonResponse(data, status = 200, origin = null) {
   }
   
   return new Response(JSON.stringify(data), { status, headers });
+}
+
+async function readBoundedJson(request) {
+  if (!request.body) throw new SyntaxError('Missing body');
+  const reader = request.body.getReader();
+  const chunks = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_PAYLOAD_SIZE) {
+        await reader.cancel();
+        throw new RangeError('Payload too large');
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return JSON.parse(new TextDecoder().decode(bytes));
 }
