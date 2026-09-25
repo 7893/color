@@ -63,7 +63,7 @@ before enabling the feature on a public deployment.
 
 `pnpm build` checks the frontend bundle. Public push/PR CI builds and performs a
 Worker packaging dry run without Cloudflare credentials. Deployment is separate:
-run the deployment workflow manually on `main` only after configuring your own
+push to `main` triggers the original deployment workflow; configure your own
 `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, D1 binding and Worker secret.
 The repository does not include production credentials or promise free cloud usage.
 
