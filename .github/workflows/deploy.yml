@@ -1,13 +1,16 @@
 name: Deploy to Cloudflare
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   deploy:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: production
     name: Deploy
     steps:
       - uses: actions/checkout@v4
@@ -17,7 +20,7 @@ jobs:
           node-version: 24
           cache: 'pnpm'
       - name: Install dependencies
-        run: pnpm install --ignore-scripts
+        run: pnpm install --ignore-scripts --frozen-lockfile
       - name: Build
         run: pnpm build
       - name: Deploy to Cloudflare Workers
