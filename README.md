@@ -6,7 +6,7 @@ Last updated: September 26, 2026.
 
 ## Run with your own resources
 
-Use Node.js 24.18.1 or newer and pnpm 11.19.0 (see `package.json`).
+Use Node.js 26.10.0 and pnpm 12.6.0 (see `package.json`).
 The public successor repository is https://github.com/7893/color-clean.
 
 ```sh
