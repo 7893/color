@@ -1,13 +1,16 @@
 name: Deploy to Cloudflare
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   deploy:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    environment: production
     name: Deploy
     env:
       VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
@@ -19,7 +22,7 @@ jobs:
           node-version: '26.10.0'
           cache: 'pnpm'
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --ignore-scripts --frozen-lockfile
       - name: Build
         run: pnpm build
       - name: Deploy to Cloudflare Workers

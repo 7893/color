@@ -1,2 +1,2 @@
-# Worker-only secret; never prefix this with VITE_.
+# Server-side Turnstile secret for your own widget; never use a public VITE_ variable.
 TURNSTILE_SECRET=
