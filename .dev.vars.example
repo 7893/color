@@ -1,0 +1,2 @@
+# Worker-only secret; never prefix this with VITE_.
+TURNSTILE_SECRET=

@@ -1,10 +1,10 @@
-const TURNSTILE_SITEKEY = '0x4AAAAAACq6aIKP_Uzb-Wij';
+const TURNSTILE_SITEKEY = import.meta.env.VITE_TURNSTILE_SITE_KEY || '';
 let turnstileToken = null;
 let turnstileReady = false;
 let turnstileWidgetId = null;
 
 export function initTurnstile() {
-  if (turnstileReady || typeof window.turnstile === 'undefined') return;
+  if (!TURNSTILE_SITEKEY || turnstileReady || typeof window.turnstile === 'undefined') return;
   turnstileReady = true;
   turnstileWidgetId = window.turnstile.render('#turnstile-widget', {
     sitekey: TURNSTILE_SITEKEY,

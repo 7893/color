@@ -14,3 +14,11 @@ command = "pnpm build"
 
 [vars]
 ALLOWED_ORIGINS = "https://color.53.workers.dev,https://color.pages.dev,http://localhost:5173,http://localhost:4173"
+
+# Fail closed if this binding or TURNSTILE_SECRET is absent.
+# Limits are per Cloudflare location, not a global billing cap.
+[[unsafe.bindings]]
+type = "ratelimit"
+name = "SNAPSHOT_RATE_LIMITER"
+namespace_id = "1003"
+simple = { limit = 5, period = 60 }
