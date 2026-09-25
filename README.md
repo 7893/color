@@ -77,5 +77,5 @@ Snapshots remain a shared rolling sample of 1,024 records, not private user stor
 Request bodies are limited to 10 KiB while reading the stream.
 
 Set the public `VITE_TURNSTILE_SITE_KEY` for your own hostname before building
-(`.env` locally, repository variable of the same name in GitHub Actions). Keep the
+(`.env` locally, repository secret of the same name in GitHub Actions). Keep the
 matching secret in Worker secrets only; never expose it through a `VITE_` variable.
