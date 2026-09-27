@@ -25,7 +25,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   try {
-    const glHandle = initGL();
+    let glHandle = null;
+    try {
+      glHandle = initGL();
+    } catch (error) {
+      console.warn('Background animation unavailable', error);
+    }
     if (!glHandle) {
       console.warn('WebGL not available, continuing without background animation');
     }
@@ -41,8 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    window.addEventListener('beforeunload', () => {
-      glHandle?.destroy?.();
+    window.addEventListener('pagehide', event => {
+      if (!event.persisted) glHandle?.destroy?.();
     });
   } catch (error) {
     console.error('Initialization error:', error);

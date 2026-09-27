@@ -1,60 +1,10 @@
 const CLEAR_COLOR = [0x1C / 255, 0x1C / 255, 0x1E / 255, 1];
 const MAX_COLORS = 8;
 
-const VERTEX_SHADER_SOURCE = `
-attribute vec2 a_position;
-varying vec2 v_uv;
-
-void main() {
-  v_uv = (a_position + 1.0) * 0.5;
-  gl_Position = vec4(a_position, 0.0, 1.0);
-}
-`;
-
-const FRAGMENT_SHADER_SOURCE = `
-precision mediump float;
-
-varying vec2 v_uv;
-uniform float u_time;
-uniform vec2 u_resolution;
-uniform int u_colorCount;
-uniform vec3 u_colors[${MAX_COLORS}];
-uniform float u_parallax;
-
-void main() {
-  vec2 uv = v_uv;
-  vec2 centered = uv - 0.5;
-  float time = u_time * 0.05;
-  vec3 base = vec3(${CLEAR_COLOR[0]}, ${CLEAR_COLOR[1]}, ${CLEAR_COLOR[2]});
-  vec3 accum = base;
-  float totalWeight = 1.0;
-
-  for (int i = 0; i < ${MAX_COLORS}; i++) {
-    if (i >= u_colorCount) {
-      continue;
-    }
-
-    float idx = float(i);
-    vec2 offset = vec2(
-      sin(time + idx * 1.7) * 0.15,
-      cos(time * 0.8 + idx * 1.3) * 0.15
-    );
-    vec2 flow = centered + offset * (0.4 + u_parallax * 0.2);
-    float bands = sin((flow.x * 3.14159) + idx * 0.7 + time * 0.6);
-    float mask = smoothstep(0.55, 0.0, length(flow));
-    float weight = mix(0.08, 0.35, (bands * 0.5 + 0.5)) * mask;
-
-    accum += u_colors[i] * weight;
-    totalWeight += weight;
-  }
-
-  vec3 color = mix(base, accum / totalWeight, 0.5);
-  gl_FragColor = vec4(color, 1.0);
-}
-`;
+import { VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE } from './palette-shaders.js';
 
 function resizeCanvas(canvas) {
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(2500000 / Math.max(1, window.innerWidth * window.innerHeight)));
   const displayWidth = Math.floor(window.innerWidth * dpr);
   const displayHeight = Math.floor(window.innerHeight * dpr);
 
@@ -83,7 +33,13 @@ function createShader(gl, type, source) {
 
 function createProgram(gl, vertexSource, fragmentSource) {
   const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexSource);
-  const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
+  let fragmentShader;
+  try {
+    fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentSource);
+  } catch (error) {
+    gl.deleteShader(vertexShader);
+    throw error;
+  }
   const program = gl.createProgram();
   gl.attachShader(program, vertexShader);
   gl.attachShader(program, fragmentShader);
@@ -118,105 +74,112 @@ function hexToRgb(hex) {
 export function initGL() {
   const canvas = document.getElementById('glCanvas');
   if (!canvas) return null;
-
-  const gl = canvas.getContext('webgl2', { powerPreference: 'high-performance' })
-    || canvas.getContext('webgl', { powerPreference: 'high-performance' });
-
+  const gl = canvas.getContext('webgl', { powerPreference: 'high-performance' });
   if (!gl) return null;
 
-  const program = createProgram(gl, VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
-  gl.useProgram(program);
-
-  const positionBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.bufferData(
-    gl.ARRAY_BUFFER,
-    new Float32Array([
-      -1, -1,
-      3, -1,
-      -1, 3
-    ]),
-    gl.STATIC_DRAW
-  );
-
-  const positionLocation = gl.getAttribLocation(program, 'a_position');
-  gl.enableVertexAttribArray(positionLocation);
-  gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
-
-  const uniformLocations = {
-    time: gl.getUniformLocation(program, 'u_time'),
-    resolution: gl.getUniformLocation(program, 'u_resolution'),
-    colorCount: gl.getUniformLocation(program, 'u_colorCount'),
-    colors: gl.getUniformLocation(program, 'u_colors'),
-    parallax: gl.getUniformLocation(program, 'u_parallax')
-  };
-
+  let program = null, positionBuffer = null, uniforms;
+  let frameId = 0, lost = false, destroyed = false;
   const colorBuffer = new Float32Array(MAX_COLORS * 3);
   let colorCount = 0;
 
+  function release() {
+    if (positionBuffer) gl.deleteBuffer(positionBuffer);
+    if (program) gl.deleteProgram(program);
+    positionBuffer = program = null;
+  }
+  function initialize() {
+    try {
+      program = createProgram(gl, VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE);
+      gl.useProgram(program);
+      positionBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+      const position = gl.getAttribLocation(program, 'a_position');
+      gl.enableVertexAttribArray(position);
+      gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+      uniforms = {
+        time: gl.getUniformLocation(program, 'u_time'),
+        colorCount: gl.getUniformLocation(program, 'u_colorCount'),
+        colors: gl.getUniformLocation(program, 'u_colors'),
+        parallax: gl.getUniformLocation(program, 'u_parallax'),
+      };
+      gl.disable(gl.DEPTH_TEST);
+      gl.disable(gl.CULL_FACE);
+      gl.clearColor(...CLEAR_COLOR);
+      resizeCanvas(canvas);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      uploadColors();
+      canvas.style.display = '';
+      return true;
+    } catch (error) {
+      release();
+      canvas.style.display = 'none';
+      console.warn('Background animation unavailable', error);
+      return false;
+    }
+  }
+  function uploadColors() {
+    if (!program || lost || destroyed) return;
+    gl.useProgram(program);
+    gl.uniform1i(uniforms.colorCount, colorCount);
+    gl.uniform3fv(uniforms.colors, colorBuffer);
+    gl.uniform1f(uniforms.parallax, Math.min(0.6, (colorCount / MAX_COLORS) * 0.5));
+  }
   function updatePaletteColors(hexColors = []) {
     const limited = hexColors.slice(0, MAX_COLORS);
     colorBuffer.fill(0);
     colorCount = limited.length;
-
-    limited.forEach((hex, index) => {
-      const [r, g, b] = hexToRgb(hex);
-      const baseIndex = index * 3;
-      colorBuffer[baseIndex] = r;
-      colorBuffer[baseIndex + 1] = g;
-      colorBuffer[baseIndex + 2] = b;
-    });
-
-    gl.useProgram(program);
-    gl.uniform1i(uniformLocations.colorCount, colorCount);
-    gl.uniform3fv(uniformLocations.colors, colorBuffer);
+    limited.forEach((hex, index) => colorBuffer.set(hexToRgb(hex), index * 3));
+    uploadColors();
   }
-
-  resizeCanvas(canvas);
-  gl.viewport(0, 0, canvas.width, canvas.height);
-  gl.disable(gl.DEPTH_TEST);
-  gl.disable(gl.CULL_FACE);
-  gl.clearColor(...CLEAR_COLOR);
-
-  let frameId = 0;
-
-  const render = (timestamp) => {
-    gl.useProgram(program);
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.uniform1f(uniformLocations.time, timestamp * 0.001);
-    gl.uniform2f(uniformLocations.resolution, canvas.width, canvas.height);
-    const parallaxStrength = Math.min(0.6, (colorCount / MAX_COLORS) * 0.5);
-    gl.uniform1f(uniformLocations.parallax, parallaxStrength);
+  function render(timestamp) {
+    frameId = 0;
+    if (destroyed || lost || !program || document.hidden) return;
+    gl.uniform1f(uniforms.time, timestamp * 0.001);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
-    frameId = window.requestAnimationFrame(render);
-  };
-
-  frameId = window.requestAnimationFrame(render);
-
-  const handleResize = () => {
+    frameId = requestAnimationFrame(render);
+  }
+  function stop() {
+    cancelAnimationFrame(frameId);
+    frameId = 0;
+  }
+  function start() {
+    if (!frameId && !destroyed && !lost && program && !document.hidden) frameId = requestAnimationFrame(render);
+  }
+  function handleResize() {
+    if (destroyed || lost || !program) return;
     resizeCanvas(canvas);
     gl.viewport(0, 0, canvas.width, canvas.height);
-  };
-
+  }
+  function visibility() { document.hidden ? stop() : start(); }
+  function contextLost(event) {
+    event.preventDefault();
+    lost = true;
+    stop();
+    canvas.style.display = 'none';
+  }
+  function contextRestored() {
+    if (destroyed) return;
+    lost = false;
+    if (initialize()) start();
+  }
+  if (!initialize()) return null;
+  updatePaletteColors(['#1c1c1e']);
   window.addEventListener('resize', handleResize, { passive: true });
-
-  // Seed with base color to avoid uninitialized uniforms.
-  updatePaletteColors([`#${CLEAR_COLOR.slice(0, 3).map(v => {
-    const hex = Math.round(v * 255).toString(16).padStart(2, '0');
-    return hex;
-  }).join('')}`]);
-
+  document.addEventListener('visibilitychange', visibility);
+  canvas.addEventListener('webglcontextlost', contextLost);
+  canvas.addEventListener('webglcontextrestored', contextRestored);
+  start();
   return {
-    canvas,
-    gl,
-    updatePaletteColors,
+    canvas, gl, updatePaletteColors,
     destroy() {
-      window.cancelAnimationFrame(frameId);
+      destroyed = true;
+      stop();
       window.removeEventListener('resize', handleResize);
-      gl.bindBuffer(gl.ARRAY_BUFFER, null);
-      gl.useProgram(null);
-      if (positionBuffer) gl.deleteBuffer(positionBuffer);
-      if (program) gl.deleteProgram(program);
-    }
+      document.removeEventListener('visibilitychange', visibility);
+      canvas.removeEventListener('webglcontextlost', contextLost);
+      canvas.removeEventListener('webglcontextrestored', contextRestored);
+      release();
+    },
   };
 }
