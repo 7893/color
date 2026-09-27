@@ -18,6 +18,8 @@ export class PaletteApp {
     this.userId = this.getUserId();
     this.snapshotSaved = false;
     this.randomSeed = Math.random() * 10000;
+    this.selectedColors = null;
+    this.pendingSave = null;
     this.init();
   }
 
@@ -48,7 +50,7 @@ export class PaletteApp {
 
     const saveState = () => {
       if (this.currentSnapshot && !this.snapshotSaved) {
-        this.saveSnapshot({ preferBeacon: true });
+        void this.saveSnapshot({ keepalive: true });
       }
     };
 
@@ -63,9 +65,12 @@ export class PaletteApp {
 
   generateSwatches() {
     this.container.innerHTML = '';
-    this.randomSeed = Math.random() * 10000;
+    if (!this.selectedColors) {
+      this.randomSeed = Math.random() * 10000;
+      this.selectedColors = pickRandomColors(this.colors, this.config.DESKTOP_COUNT);
+    }
     const layout = this.calculateLayoutParameters();
-    const selectedColors = pickRandomColors(this.colors, layout.swatchCount);
+    const selectedColors = this.selectedColors.slice(0, layout.swatchCount);
     this.highestZIndex = selectedColors.length;
 
     const positions = [];
@@ -89,26 +94,26 @@ export class PaletteApp {
 
   async saveSnapshot(options = {}) {
     if (!this.currentSnapshot || this.snapshotSaved) return;
-    
+    if (this.pendingSave) return this.pendingSave;
+    const revision = this.currentSnapshot;
     const snapshot = {
       userId: this.userId,
-      colors: JSON.stringify(this.currentSnapshot.colors),
-      positions: JSON.stringify(this.currentSnapshot.positions),
-      deviceType: this.currentSnapshot.deviceType
+      colors: JSON.stringify(revision.colors),
+      positions: JSON.stringify(revision.positions),
+      deviceType: revision.deviceType
     };
-
-    try {
-      if (options.preferBeacon) {
-        saveSnapshot(snapshot, { preferBeacon: true });
-        this.snapshotSaved = true;
-        return;
+    this.pendingSave = (async () => {
+      try {
+        await saveSnapshot(snapshot, options);
+        // A resize may have created a different snapshot during the request.
+        if (this.currentSnapshot === revision) this.snapshotSaved = true;
+      } catch (error) {
+        console.error('Failed to save snapshot:', error);
+      } finally {
+        this.pendingSave = null;
       }
-
-      await saveSnapshot(snapshot);
-      this.snapshotSaved = true;
-    } catch (error) {
-      console.error('Failed to save snapshot:', error);
-    }
+    })();
+    return this.pendingSave;
   }
 
   onPaletteUpdate(callback) {

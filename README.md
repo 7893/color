@@ -15,7 +15,7 @@ cd color
 pnpm install --frozen-lockfile
 ```
 
-The animated palette is a browser UI. Saving or loading snapshots also needs the
+The animated palette is a browser UI. Saving snapshots also needs the
 Worker and its D1 binding; a Vite-only session is not a complete snapshot backend.
 
 ### Local snapshot backend
