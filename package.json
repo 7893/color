@@ -12,7 +12,7 @@
     "preview": "vite preview",
     "deploy": "pnpm build && wrangler deploy",
     "cf:dev": "wrangler dev --local --port 8787",
-    "test": "node --experimental-test-module-mocks --test worker/*.test.js test/*.test.js"
+    "test": "node --experimental-test-module-mocks --test test/*.test.js"
   },
   "devDependencies": {
     "vite": "^8.1.5",

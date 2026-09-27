@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import worker from './index.js';
+import worker from '../worker/index.js';
 
 const request = (body = '{}') => new Request('https://example.test/api/snapshots', {
   method: 'POST', headers: { Origin: 'https://example.test' }, body,
