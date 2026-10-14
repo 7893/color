@@ -1,2 +1,0 @@
-# Server-side Turnstile secret for your own widget; never use a public VITE_ variable.
-TURNSTILE_SECRET=

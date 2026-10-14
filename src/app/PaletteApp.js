@@ -1,5 +1,4 @@
 import { getTextColorClass, pickRandomColors } from '../utils/helpers.js';
-import { saveSnapshot } from '../services/api.js';
 
 export class PaletteApp {
   constructor(containerId, config, colors) {
@@ -12,14 +11,11 @@ export class PaletteApp {
     this.colors = colors;
     this.highestZIndex = 0;
     this.resizeTimer = null;
-    this.currentSnapshot = null;
+    this.currentColors = [];
     this.lastLayout = null;
     this.paletteListeners = [];
-    this.userId = this.getUserId();
-    this.snapshotSaved = false;
     this.randomSeed = Math.random() * 10000;
-    this.selectedColors = null;
-    this.pendingSave = null;
+    this.selectedColors = pickRandomColors(this.colors, this.config.DESKTOP_COUNT);
     this.init();
   }
 
@@ -28,100 +24,37 @@ export class PaletteApp {
     this.attachGlobalListeners();
   }
 
-  getUserId() {
-    try {
-      let userId = localStorage.getItem('color-user-id');
-      if (!userId) {
-        userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        localStorage.setItem('color-user-id', userId);
-      }
-      return userId;
-    } catch (error) {
-      console.warn('localStorage not available, using session-only ID:', error);
-      return `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    }
-  }
-
   attachGlobalListeners() {
     window.addEventListener('resize', () => {
       clearTimeout(this.resizeTimer);
       this.resizeTimer = setTimeout(() => this.generateSwatches(), 250);
     });
-
-    const saveState = () => {
-      if (this.currentSnapshot && !this.snapshotSaved) {
-        void this.saveSnapshot({ keepalive: true });
-      }
-    };
-
-    window.addEventListener('beforeunload', saveState);
-
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') {
-        saveState();
-      }
-    });
   }
 
   generateSwatches() {
     this.container.innerHTML = '';
-    if (!this.selectedColors) {
-      this.randomSeed = Math.random() * 10000;
-      this.selectedColors = pickRandomColors(this.colors, this.config.DESKTOP_COUNT);
-    }
     const layout = this.calculateLayoutParameters();
     const selectedColors = this.selectedColors.slice(0, layout.swatchCount);
     this.highestZIndex = selectedColors.length;
 
-    const positions = [];
     selectedColors.forEach((colorItem, index) => {
       const swatch = this.createSwatchElement(colorItem, layout, index);
       this.container.appendChild(swatch);
       const target = this.computeTargetPosition(index, layout);
-      const position = this.animateIn(swatch, layout, target);
-      positions.push({ ...position, color: colorItem.hex });
+      this.animateIn(swatch, layout, target);
     });
 
-    this.currentSnapshot = {
-      colors: selectedColors.map(c => c.hex),
-      positions,
-      deviceType: layout.width > 1024 ? 'desktop' : layout.width > 768 ? 'tablet' : 'mobile'
-    };
-    this.snapshotSaved = false;
+    this.currentColors = selectedColors.map(c => c.hex);
     this.lastLayout = layout;
-    this.notifyPaletteUpdate(this.currentSnapshot.colors, layout);
-  }
-
-  async saveSnapshot(options = {}) {
-    if (!this.currentSnapshot || this.snapshotSaved) return;
-    if (this.pendingSave) return this.pendingSave;
-    const revision = this.currentSnapshot;
-    const snapshot = {
-      userId: this.userId,
-      colors: JSON.stringify(revision.colors),
-      positions: JSON.stringify(revision.positions),
-      deviceType: revision.deviceType
-    };
-    this.pendingSave = (async () => {
-      try {
-        await saveSnapshot(snapshot, options);
-        // A resize may have created a different snapshot during the request.
-        if (this.currentSnapshot === revision) this.snapshotSaved = true;
-      } catch (error) {
-        console.error('Failed to save snapshot:', error);
-      } finally {
-        this.pendingSave = null;
-      }
-    })();
-    return this.pendingSave;
+    this.notifyPaletteUpdate(this.currentColors, layout);
   }
 
   onPaletteUpdate(callback) {
     if (typeof callback === 'function') {
       this.paletteListeners.push(callback);
-      if (this.currentSnapshot && this.lastLayout) {
+      if (this.lastLayout) {
         callback({
-          colors: [...this.currentSnapshot.colors],
+          colors: [...this.currentColors],
           layout: { ...this.lastLayout }
         });
       }

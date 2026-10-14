@@ -2,28 +2,34 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import worker from '../worker/index.js';
 
-const request = (body = '{}') => new Request('https://example.test/api/snapshots', {
-  method: 'POST', headers: { Origin: 'https://example.test' }, body,
-});
-const protectedEnv = () => ({
-  TURNSTILE_SECRET: 'test-only',
-  SNAPSHOT_RATE_LIMITER: { limit: async () => ({ success: true }) },
+test('the retired snapshot endpoint cannot access storage or assets', async () => {
+  const env = new Proxy({}, { get() { throw Error('Unexpected binding access'); } });
+  for (const method of ['GET', 'POST', 'OPTIONS']) {
+    const response = await worker.fetch(new Request('https://example.test/api/snapshots', { method }), env);
+    assert.equal(response.status, 404);
+  }
 });
 
-test('missing security configuration blocks database writes', async () => {
-  assert.equal((await worker.fetch(request(), {})).status, 503);
-  assert.equal((await worker.fetch(request(), { TURNSTILE_SECRET: 'test' })).status, 503);
+test('serves the page through the assets binding', async () => {
+  const response = await worker.fetch(new Request('https://example.test/'), {
+    ASSETS: { fetch: async () => new Response('<html>Color</html>') },
+  });
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), '<html>Color</html>');
 });
-test('exhausted and broken rate limiters fail closed', async () => {
-  const env = protectedEnv();
-  env.SNAPSHOT_RATE_LIMITER.limit = async () => ({ success: false });
-  assert.equal((await worker.fetch(request(), env)).status, 429);
-  env.SNAPSHOT_RATE_LIMITER.limit = async () => { throw Error('unavailable'); };
-  assert.equal((await worker.fetch(request(), env)).status, 503);
-});
-test('actual body bytes are limited without content-length', async () => {
-  assert.equal((await worker.fetch(request(' '.repeat(10241)), protectedEnv())).status, 413);
-});
-test('malformed input fails before verification or storage', async () => {
-  assert.equal((await worker.fetch(request('{'), protectedEnv())).status, 400);
+
+test('unknown page paths fall back to the homepage; missing files stay missing', async () => {
+  const paths = [];
+  const env = { ASSETS: { fetch: async request => {
+    const path = new URL(request.url).pathname;
+    paths.push(path);
+    return path === '/index.html' ? new Response('Color') : new Response('Not found', { status: 404 });
+  } } };
+  const page = await worker.fetch(new Request('https://example.test/unknown'), env);
+  assert.equal(await page.text(), 'Color');
+  assert.deepEqual(paths, ['/unknown', '/index.html']);
+  paths.length = 0;
+  const file = await worker.fetch(new Request('https://example.test/missing.js'), env);
+  assert.equal(file.status, 404);
+  assert.deepEqual(paths, ['/missing.js']);
 });
