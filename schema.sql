@@ -1,3 +1,5 @@
+-- Legacy snapshot schema, retained for existing historical data.
+-- The application no longer writes snapshots or binds this database.
 CREATE TABLE color_snapshots (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
