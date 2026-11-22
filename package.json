@@ -15,7 +15,7 @@
     "test": "node --test test/*.test.js"
   },
   "devDependencies": {
-    "vite": "^8.1.5",
+    "vite": "^8.1.6",
     "wrangler": "^4.120.1"
   },
   "packageManager": "pnpm@12.17.0"
