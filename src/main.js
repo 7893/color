@@ -5,17 +5,29 @@ import { masterColorsList } from './data/colors.js';
 import { CONFIG } from './config/constants.js';
 
 function showError(message) {
-  document.body.innerHTML = `
-    <div style="display: flex; align-items: center; justify-content: center; height: 100vh; color: white; font-family: sans-serif; text-align: center; padding: 20px;">
-      <div>
-        <h1 style="font-size: 24px; margin-bottom: 10px;">⚠️ Error</h1>
-        <p style="font-size: 16px; opacity: 0.8;">${message}</p>
-      </div>
-    </div>
-  `;
+  const screen = document.createElement('div');
+  screen.className = 'error-screen';
+  screen.setAttribute('role', 'alert');
+
+  const card = document.createElement('div');
+  card.className = 'error-card';
+
+  const title = document.createElement('h1');
+  title.className = 'error-title';
+  title.textContent = 'Error';
+
+  const body = document.createElement('p');
+  body.className = 'error-message';
+  body.textContent = message;
+
+  card.appendChild(title);
+  card.appendChild(body);
+  screen.appendChild(card);
+
+  document.body.replaceChildren(screen);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+function init() {
   try {
     let glHandle = null;
     try {
@@ -38,14 +50,20 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    window.addEventListener('pagehide', event => {
+    window.addEventListener('pagehide', (event) => {
       if (!event.persisted) glHandle?.destroy?.();
     });
   } catch (error) {
     console.error('Initialization error:', error);
     showError('Failed to initialize the application. Please refresh the page.');
   }
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init, { once: true });
+} else {
+  init();
+}
 
 window.addEventListener('error', (event) => {
   console.error('Global error:', event.error);

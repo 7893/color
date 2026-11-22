@@ -9,7 +9,11 @@ void main() {
 `;
 
 export const FRAGMENT_SHADER_SOURCE = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
 precision mediump float;
+#endif
 
 varying vec2 v_uv;
 uniform float u_time;
@@ -48,4 +52,3 @@ void main() {
   gl_FragColor = vec4(color, 1.0);
 }
 `;
-

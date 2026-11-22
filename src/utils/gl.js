@@ -1,7 +1,22 @@
 const CLEAR_COLOR = [0x1C / 255, 0x1C / 255, 0x1E / 255, 1];
 const MAX_COLORS = 8;
 
+// Exact common period (in seconds) of the shader's 1.0x, 0.8x, and 0.6x cycles at 0.05 rad/s,
+// keeping u_time well within FP16 (mediump) range on long-lived mobile tabs.
+export const TIME_WRAP_SECONDS = 200 * Math.PI;
+
 import { VERTEX_SHADER_SOURCE, FRAGMENT_SHADER_SOURCE } from './palette-shaders.js';
+
+export function wrapShaderTime(timestampMs) {
+  const seconds = timestampMs * 0.001;
+  return ((seconds % TIME_WRAP_SECONDS) + TIME_WRAP_SECONDS) % TIME_WRAP_SECONDS;
+}
+
+function setCanvasHidden(canvas, hidden) {
+  if (canvas.classList) {
+    canvas.classList.toggle('is-hidden', hidden);
+  }
+}
 
 function resizeCanvas(canvas) {
   const dpr = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(2500000 / Math.max(1, window.innerWidth * window.innerHeight)));
@@ -12,9 +27,6 @@ function resizeCanvas(canvas) {
     canvas.width = displayWidth;
     canvas.height = displayHeight;
   }
-
-  canvas.style.width = '100vw';
-  canvas.style.height = '100vh';
 }
 
 function createShader(gl, type, source) {
@@ -61,7 +73,7 @@ function createProgram(gl, vertexSource, fragmentSource) {
 function hexToRgb(hex) {
   const clean = hex.replace('#', '');
   const value = parseInt(clean.length === 3
-    ? clean.split('').map(ch => ch + ch).join('')
+    ? clean.split('').map((ch) => ch + ch).join('')
     : clean, 16);
 
   return [
@@ -74,8 +86,13 @@ function hexToRgb(hex) {
 export function initGL() {
   const canvas = document.getElementById('glCanvas');
   if (!canvas) return null;
-  const gl = canvas.getContext('webgl', { powerPreference: 'high-performance' });
+  const gl = canvas.getContext('webgl', { powerPreference: 'default' });
   if (!gl) return null;
+
+  const motionQuery = typeof window.matchMedia === 'function'
+    ? window.matchMedia('(prefers-reduced-motion: reduce)')
+    : null;
+  const isReducedMotion = () => Boolean(motionQuery?.matches);
 
   let program = null, positionBuffer = null, uniforms;
   let frameId = 0, lost = false, destroyed = false;
@@ -86,6 +103,11 @@ export function initGL() {
     if (positionBuffer) gl.deleteBuffer(positionBuffer);
     if (program) gl.deleteProgram(program);
     positionBuffer = program = null;
+  }
+  function drawFrame(timeSeconds) {
+    if (destroyed || lost || !program) return;
+    gl.uniform1f(uniforms.time, timeSeconds);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
   function initialize() {
     try {
@@ -109,11 +131,11 @@ export function initGL() {
       resizeCanvas(canvas);
       gl.viewport(0, 0, canvas.width, canvas.height);
       uploadColors();
-      canvas.style.display = '';
+      setCanvasHidden(canvas, false);
       return true;
     } catch (error) {
       release();
-      canvas.style.display = 'none';
+      setCanvasHidden(canvas, true);
       console.warn('Background animation unavailable', error);
       return false;
     }
@@ -131,32 +153,46 @@ export function initGL() {
     colorCount = limited.length;
     limited.forEach((hex, index) => colorBuffer.set(hexToRgb(hex), index * 3));
     uploadColors();
+    if (isReducedMotion()) {
+      drawFrame(0);
+    }
   }
   function render(timestamp) {
     frameId = 0;
     if (destroyed || lost || !program || document.hidden) return;
-    gl.uniform1f(uniforms.time, timestamp * 0.001);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-    frameId = requestAnimationFrame(render);
+    drawFrame(wrapShaderTime(timestamp));
+    if (!isReducedMotion()) {
+      frameId = requestAnimationFrame(render);
+    }
   }
   function stop() {
     cancelAnimationFrame(frameId);
     frameId = 0;
   }
   function start() {
-    if (!frameId && !destroyed && !lost && program && !document.hidden) frameId = requestAnimationFrame(render);
+    if (destroyed || lost || !program || document.hidden) return;
+    if (isReducedMotion()) {
+      stop();
+      drawFrame(0);
+      return;
+    }
+    if (!frameId) frameId = requestAnimationFrame(render);
   }
   function handleResize() {
     if (destroyed || lost || !program) return;
     resizeCanvas(canvas);
     gl.viewport(0, 0, canvas.width, canvas.height);
+    if (isReducedMotion()) {
+      drawFrame(0);
+    }
   }
   function visibility() { document.hidden ? stop() : start(); }
+  function handleMotionChange() { start(); }
   function contextLost(event) {
     event.preventDefault();
     lost = true;
     stop();
-    canvas.style.display = 'none';
+    setCanvasHidden(canvas, true);
   }
   function contextRestored() {
     if (destroyed) return;
@@ -169,6 +205,7 @@ export function initGL() {
   document.addEventListener('visibilitychange', visibility);
   canvas.addEventListener('webglcontextlost', contextLost);
   canvas.addEventListener('webglcontextrestored', contextRestored);
+  motionQuery?.addEventListener?.('change', handleMotionChange);
   start();
   return {
     canvas, gl, updatePaletteColors,
@@ -179,6 +216,7 @@ export function initGL() {
       document.removeEventListener('visibilitychange', visibility);
       canvas.removeEventListener('webglcontextlost', contextLost);
       canvas.removeEventListener('webglcontextrestored', contextRestored);
+      motionQuery?.removeEventListener?.('change', handleMotionChange);
       release();
     },
   };
